@@ -161,6 +161,25 @@ describe('транзакции и запросы', () => {
     expect(() => db.run('INSERT INTO c VALUES (99)')).toThrow(/FOREIGN KEY/);
   });
 
+  it('отказ COMMIT (отложенный внешний ключ): откат, исходная ошибка и рабочие следующие транзакции', () => {
+    const db = open(
+      ':memory:',
+      migrationsDir({
+        '001-fk.sql':
+          'CREATE TABLE p (id INTEGER PRIMARY KEY); CREATE TABLE c (pid INTEGER REFERENCES p(id) DEFERRABLE INITIALLY DEFERRED);',
+      }),
+    );
+    expect(() => db.tx((tx) => tx.run('INSERT INTO c VALUES (99)'))).toThrow(/FOREIGN KEY/);
+    // транзакция не осталась открытой, а счётчик вложенности не сбился
+    db.tx((tx) => {
+      tx.run('INSERT INTO p VALUES (1)');
+      tx.run('INSERT INTO c VALUES (1)');
+    });
+    expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM c')!.n).toBe(1);
+    expect(() => db.tx((tx) => tx.run('INSERT INTO c VALUES (98)'))).toThrow(/FOREIGN KEY/);
+    expect(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM c')!.n).toBe(1);
+  });
+
   it('run сообщает число изменённых строк, get возвращает undefined, если строки нет', () => {
     const db = fresh();
     expect(db.run('INSERT INTO t VALUES (5)').changes).toBe(1);

@@ -74,6 +74,17 @@ describe('каркас сервера', () => {
     expect(evil.statusCode).toBe(404);
   });
 
+  it('хук одного модуля не действует на маршруты других модулей, а общий хук X-Requested-With действует на всех', async () => {
+    const app = await make();
+    const own = await app.inject({ method: 'GET', url: '/api/v1/hook-probe/ping' });
+    expect(own.headers['x-hook-probe']).toBe('applied');
+    const other = await app.inject({ method: 'GET', url: '/api/v1/probe/hello' });
+    expect(other.statusCode).toBe(200);
+    expect(other.headers['x-hook-probe']).toBeUndefined();
+    const blocked = await app.inject({ method: 'POST', url: '/api/v1/probe/echo', payload: {} });
+    expect(blocked.statusCode).toBe(403);
+  });
+
   it('запись требует заголовок X-Requested-With, чтение и вебхуки — нет', async () => {
     const app = await make();
     const blocked = await app.inject({

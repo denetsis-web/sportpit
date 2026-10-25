@@ -100,23 +100,38 @@ export function openDb(path: string, options: OpenDbOptions = {}): Db {
     },
     exec: (sql) => raw.exec(sql),
     tx<T>(fn: (db: Db) => T): T {
+      const outermost = depth === 0;
       const savepoint = `sp_${depth}`;
-      raw.exec(depth === 0 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${savepoint}`);
+      // Откат не должен подменять исходную ошибку: если он сам не удался, транзакции уже нет.
+      const rollback = () => {
+        try {
+          raw.exec(outermost ? 'ROLLBACK' : `ROLLBACK TO ${savepoint}; RELEASE ${savepoint}`);
+        } catch {
+          // SQLite уже откатил транзакцию сам
+        }
+      };
+      raw.exec(outermost ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${savepoint}`);
       depth += 1;
+      let result: T;
       try {
-        const result = fn(db);
+        result = fn(db);
         if (result && typeof (result as { then?: unknown }).then === 'function') {
           throw new Error('Функция транзакции должна быть синхронной (без async/await).');
         }
-        depth -= 1;
-        raw.exec(depth === 0 ? 'COMMIT' : `RELEASE ${savepoint}`);
-        return result;
       } catch (error) {
         depth -= 1;
-        if (depth === 0) raw.exec('ROLLBACK');
-        else raw.exec(`ROLLBACK TO ${savepoint}; RELEASE ${savepoint}`);
+        rollback();
         throw error;
       }
+      depth -= 1;
+      try {
+        // COMMIT может отказать (например, отложенный внешний ключ): тогда откатываем и пробрасываем её.
+        raw.exec(outermost ? 'COMMIT' : `RELEASE ${savepoint}`);
+      } catch (error) {
+        rollback();
+        throw error;
+      }
+      return result;
     },
     close: () => {
       if (raw.isOpen) raw.close();

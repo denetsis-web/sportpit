@@ -107,7 +107,7 @@ scripts         команды: seed, create-user, backup, иконки, про�
 
 - `routes.ts` с `export function registerRoutes(app, deps)`: маршруты монтируются под `/api/v1`
   (путь в модуле пишется без префикса: `app.get('/orders', …)`). Запись (POST, PUT, PATCH, DELETE) требует заголовок
-  `X-Requested-With`, кроме путей `/api/v1/webhooks/…`. Модули подключаются по алфавиту.
+  `X-Requested-With`, кроме путей `/api/v1/webhooks/…`. Модули подключаются по алфавиту, каждый в своём изолированном контексте Fastify: хук (`addHook`) или декоратор модуля действует только на его маршруты, а общий хук `X-Requested-With` наследуют все. Общие вещи (проверка роли, текущий пользователь) отдавайте обычными функциями из `index.ts` модуля и подключайте на нужных маршрутах через `preHandler`.
 - `jobs.ts` с `export function registerJobs(scheduler, deps)`: фоновые задачи через
   `scheduler.register(имя, cron, функция)`; cron по времени Кишинёва («минута час день месяц день_недели»).
 - Ошибки: `throw errors.forbidden()` или `new AppError(status, code, 'пространство.ключ')`; текст берётся из словаря на языке запроса.

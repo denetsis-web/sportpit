@@ -246,7 +246,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<AppInstan
       for (const mod of modules) {
         if (!mod.routesFile) continue;
         const registerRoutes = await loadExport<RoutesFn>(mod.routesFile, 'registerRoutes');
-        await registerRoutes(v1 as unknown as AppInstance, deps);
+        // Каждый модуль в своём изолированном контексте: его хуки и декораторы чужие маршруты не задевают.
+        // Общий хук X-Requested-With, добавленный выше, наследуется всеми.
+        await v1.register(async (scope) => {
+          await registerRoutes(scope as unknown as AppInstance, deps);
+        });
       }
     },
     { prefix: '/api/v1' },
