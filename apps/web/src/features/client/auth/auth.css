@@ -1,0 +1,34 @@
+/* Экраны входа и согласий: только раскладка, цвета берутся из токенов общей темы. */
+
+.consent {
+  margin-bottom: var(--space-4);
+}
+
+.consent__option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--tap-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.consent__option input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.125rem;
+}
+
+.consent__text,
+.consent__version {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

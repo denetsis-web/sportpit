@@ -99,6 +99,9 @@
 7. **Сроки и вместимость.** Таск 03 хранит параметры холодильника (`capacityBoxes`, `cutoffTime`, `pickupFrom`, `pickupTo`, `accessCode`) и настройки (`maxBoxesPerDay`, `toleranceNote`, `stockBufferPercent`, `labelSize`, `supportContacts`); таск 06 читает их через `admin.getFridge`, `admin.getSetting` и сам применяет правила.
 8. **Журнал действий администратора.** Таск 03 отдаёт `admin.audit(userId, action, target)`; таски 05 и 09 вызывают его для возвратов, цен и решений по жалобам.
 
+9. **Выгрузка данных клиента.** Таск 04 отдаёт `profile.registerExportProvider(name, fn(userId) => object)`; модули с данными пользователя (заказы, оценки, трекер) регистрируют свой провайдер при старте, профиль собирает выгрузку из них.
+10. **Фото блюд — публичные** (`/api/v1/files/*`), фото жалоб — приватные: их отдаёт модуль `feedback` своим маршрутом с проверкой прав.
+
 ## Швы для тестов
 
 1. HTTP API целиком через `fastify.inject` с базой в памяти (`:memory:`) — основной шов для серверных тестов.
@@ -119,4 +122,12 @@
 
 **Клиент.** Фича экспортирует из `routes.tsx` `routes` и `nav`. `useT`/`useI18n`, `useTheme`, `useInstall().request()` (вызвать после первого успешного заказа), `NoAccessPage`, `api/{api, ApiError, NetworkError}`, `ui/{Button, TextField, Card, Dialog, Banner}`. Язык сохраняется в `localStorage`; сохранение в профиле — таск 02/04 через `onLangChange`.
 
-**Известные оговорки.** Cron 03:00 не сработает в единственную пропущенную минуту весеннего перевода часов. Chromium/WebKit не прогонялись (R58), пункт ручной проверки — в `README.md`. Скорость на 4G не замерена. Название SportPit — рабочее, бренд/юрлицо/контакты не вписаны.
+### Таск 02 — вход, роли, уведомления
+
+**Сервер `auth`.** `requireRole(...roles)` (401 без входа, 403 без роли; без аргументов — любой вошедший), `requireFridgeAccess(id | (req)=>id)`, `assertFridgeAccess(req, id)`, `requireConsent('health_data'|…)` (403 `consent_required`), `currentUser(req)`, `authFor(deps)` → `requestOtp`, `verifyOtp`, `setRole`, `setOperatorFridges`, `listUsers`, `userIdsByRole`, `consents`, `hasConsent`, `recordConsents`, `changePhone(userId, newPhone, code)`, `anonymizeUser(userId)`, `purgeExpired`. Все ставятся в `preHandler` маршрута, глобальных хуков нет.
+**Сервер `notifications`.** `notify(deps, userId, type, payload)` и `notificationsFor(deps)` → `notify`, `list`, `markRead`, `markAllRead`, `unreadCount`. Payload плоский; поле `link` («/путь») даёт кнопку «Открыть».
+**API `/api/v1`.** `POST auth/otp/request`, `auth/otp/verify {phone, code, lang?}`, `auth/logout`; `GET|PATCH auth/me`; `GET|POST auth/consents ({changes:[{kind, granted, version}]})`; админ: `GET auth/users`, `PUT auth/users/:id/role`, `PUT auth/users/:id/fridges`; `GET notifications?limit&unread`, `POST notifications/:id/read`, `notifications/read-all`. Cookie `sp_session` (Secure, только если `PUBLIC_BASE_URL` начинается с https). Таблицы: `users`, `operator_fridges` (`fridge_id TEXT` без внешнего ключа — идентификаторы холодильников **текстовые**), `otp_codes`, `sessions`, `consents`, `notifications`.
+**Клиент.** `RequireRole` (`features/client/auth/guards.tsx`), `ConsentsForm` (для анкеты `kinds=['health_data']`), `useSession`, `NotificationsBell`, `AdminNavItem{to, labelKey, order, roles?}` и `filterNavByRole` (`admin/shell/menu.ts`); пункт админки без `roles` виден только admin (`kitchen/` и `operator/` — своим ролям).
+**Оговорки.** Колокольчик не встроен в шапку Shell и AdminEntry не фильтрует меню по роли (правки файлов таска 01) — в `concerns.md`. Роли и выдача прав без записи в журнал действий (нужен `admin.audit` из таска 03).
+
+**Известные оговорки таска 01.** Cron 03:00 не сработает в единственную пропущенную минуту весеннего перевода часов. Chromium/WebKit не прогонялись (R58), пункт ручной проверки — в `README.md`. Скорость на 4G не замерена. Название SportPit — рабочее, бренд/юрлицо/контакты не вписаны.

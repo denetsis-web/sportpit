@@ -1,0 +1,64 @@
+/* Колокольчик и список уведомлений: раскладка, цвета — из токенов общей темы. */
+
+.bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-size);
+  min-height: var(--tap-size);
+  color: var(--color-text);
+}
+
+.bell__badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 1.25rem;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.notification--unread {
+  border-left: 4px solid var(--color-primary);
+}
+
+.notification__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.notification__new {
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.notification__time {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.notification__actions,
+.notification__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.notification__actions {
+  justify-content: flex-start;
+}
