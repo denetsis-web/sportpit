@@ -1,0 +1,40 @@
+{
+  "name": "sportpit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SportPit: PWA для заказа сбалансированных боксов еды через холодильники в спортзалах",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "workspaces": [
+    "packages/shared",
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c blue,green \"npm run dev -w @sportpit/server\" \"npm run dev -w @sportpit/web\"",
+    "typecheck": "tsc --noEmit -p packages/shared && tsc --noEmit -p apps/server && tsc --noEmit -p apps/web && tsc --noEmit -p scripts",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check:bundle": "tsx scripts/check-bundle.ts",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:bundle",
+    "format": "prettier --write .",
+    "build": "npm run build -w @sportpit/web",
+    "start": "npm run start -w @sportpit/server",
+    "seed": "tsx scripts/seed.ts",
+    "create-user": "tsx scripts/create-user.ts",
+    "backup": "tsx scripts/backup.ts",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}

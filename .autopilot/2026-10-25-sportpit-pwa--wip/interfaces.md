@@ -106,4 +106,14 @@
 
 ## Что построено
 
-(заполняется по мере завершения тасков)
+### Таск 01 — каркас (коммит смотри `git log --grep="T01"`)
+
+Версии: TypeScript 6, Vitest 5, ESLint 10, Vite 8, vite-plugin-pwa 2. Vitest требует `fsModuleCache:false` (иначе `import.meta.glob` не видит новые файлы) — настроено в проектах, не менять. `npm run check` = типы + eslint + vitest + `check:bundle` (размер начального JS ≤ 250 КБ gzip, чанк админки, манифест, иконки, iOS-метки, service worker). Начальный JS сейчас 103,5 КБ.
+
+**Сервер.** `buildApp({config?, databasePath=':memory:', clock?, payment?, sms?, storage?, extraModulesDirs?, extraI18nDirs?, backupDir?, webDistDir?, serveWeb?, logger?}) → AppInstance` с `.deps`; `AppDeps{config, db, clock, payment, sms, storage, system}`. Модуль: `src/modules/<name>/routes.ts` с `registerRoutes(app, deps)` (маршруты под `/api/v1`; запись требует `X-Requested-With`, кроме `/api/v1/webhooks/*`) и `jobs.ts` с `registerJobs(scheduler, deps)`. `/api/health`. `Db{query, get, run, exec, tx(sync), migrationsApplied}`. `Clock{now, localDate, cutoffFor(dateISO, 'HH:MM')}` (срок = D−1 в это время по Кишинёву), `createManualClock`. `PaymentGateway{createPayment, getPayment, parseCallback, refund}` и `StubPaymentGateway(setOutcome, complete, callbackFor, failNext)`. `SmsSender{send}` и `StubSmsSender(outbox, failNext, last)`. `FileStorage{put, get, delete, urlFor}`, `GET /api/v1/files/*`. Система: `AppError`/`errors.*`, `EventLog(log, list, counts24h, subscribe)`, `Scheduler(register, tick, start, runNow)`, `createBackup`, `loadConfig`/`ENV_VARIABLES`.
+
+**Общий пакет.** `@sportpit/shared/i18n` (`t`, `registerDictionaries`, `DictionaryOf`, `LANG_STORAGE_KEY`), `@sportpit/shared/format` (`formatMoney`, `formatDate`, `formatTime`, `formatDateTime`), `@sportpit/shared/time`, `@sportpit/shared/types` (`Role`, `WriteOffReason`, `LedgerReason`, `ApiErrorBody`). `OrderStatus` оставлен таску 06.
+
+**Клиент.** Фича экспортирует из `routes.tsx` `routes` и `nav`. `useT`/`useI18n`, `useTheme`, `useInstall().request()` (вызвать после первого успешного заказа), `NoAccessPage`, `api/{api, ApiError, NetworkError}`, `ui/{Button, TextField, Card, Dialog, Banner}`. Язык сохраняется в `localStorage`; сохранение в профиле — таск 02/04 через `onLangChange`.
+
+**Известные оговорки.** Cron 03:00 не сработает в единственную пропущенную минуту весеннего перевода часов. Chromium/WebKit не прогонялись (R58), пункт ручной проверки — в `README.md`. Скорость на 4G не замерена. Название SportPit — рабочее, бренд/юрлицо/контакты не вписаны.
