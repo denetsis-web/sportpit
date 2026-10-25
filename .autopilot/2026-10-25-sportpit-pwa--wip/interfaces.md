@@ -1,0 +1,109 @@
+# Границы и правила проекта
+
+Читают все исполнители первым файлом. Имена — на английском. Этот файл обновляется после каждого завершённого таска раздела «Что построено».
+
+## Правила проекта
+
+1. Корень репозитория — `C:\Users\Admin\Documents\Claude\Projects\SportPit`. Код живёт в `apps/server`, `apps/web`, `packages/shared`. Файлы исследования (`01-…04-*.md`), `.autopilot/`, `AGENTS.md`, `CLAUDE.md` не трогать.
+2. npm workspaces, TypeScript строго (`strict: true`), Node ≥ 22.13, ESM. Менеджер пакетов — npm. Тесты — Vitest. Линтер — ESLint, форматирование — Prettier.
+3. Деньги — целые числа в банях (`priceBani`), валюта MDL. Время — UTC в базе, правила сроков по Europe/Chisinau через `Clock`.
+4. Баланс кредитов вычисляется только из журнала `credit_ledger`. Прямых обновлений баланса нет, исправления — компенсирующие записи.
+5. Любая проверка прав и сроков — на сервере. Интерфейс только отражает.
+6. Все строки интерфейса — в словарях `ru` и `ro` в `packages/shared/src/i18n`; ключи в обоих словарях идентичны. Текст в компонентах не пишется.
+7. Секреты: только имена в `.env.example`. Значения не читаются, не пишутся, не логируются.
+8. Внешние сервисы только через адаптеры `PaymentGateway`, `SmsSender`, `FileStorage` с заглушками по умолчанию.
+9. Миграции — упорядоченные SQL-файлы `apps/server/migrations/NNN-name.sql`; применяются при старте; существующие не редактируются.
+10. Один коммит на таск; сообщение коммита — что и почему, трейлер `Requirements: R..`.
+11. Договорённость с пользователем: «толко по предзаказу» — покупка и заказ в день выдачи без заказа накануне не поддерживаются.
+
+## Стек, версии и команды
+
+Тир T3, ~28K строк. Установка и проверка:
+
+| Команда | Что делает |
+|---|---|
+| `npm install` | поставить зависимости всех пакетов |
+| `npm run dev` | сервер (порт 3000) и клиент (порт 5173) вместе |
+| `npm run check` | типы, линтер и все тесты одной командой (создаёт таск 01) |
+| `npx vitest run <путь/к/файлу>` | один тестовый файл |
+| `npm run seed` · `npm run create-user -- --phone +373… --role admin` | стартовые данные и первый пользователь |
+
+Зависимости ставит **таск 01**, остальные таски ничего не добавляют (иначе `BLOCKED`):
+- корень: `typescript`, `tsx`, `vitest`, `eslint`, `typescript-eslint`, `prettier`, `concurrently`, `@types/node`;
+- сервер: `fastify`, `@fastify/cookie`, `@fastify/multipart`, `@fastify/static`, `zod`, `pino`;
+- клиент: `vite`, `@vitejs/plugin-react`, `react`, `react-dom`, `react-router-dom`, `vite-plugin-pwa`, `@testing-library/react`, `@testing-library/user-event`, `jsdom`, `vitest-axe`, `qrcode`, `recharts`;
+- общий пакет: `zod`.
+Версии — последние стабильные на момент установки, `package-lock.json` коммитится. Playwright не ставим; сквозные проверки в Chromium/WebKit — только если окружение их уже имеет, иначе пункт в списке ручной проверки отчёта.
+
+## Автообнаружение и зоны (чтобы параллельные таски не правили общие файлы)
+
+1. **Маршруты сервера.** Каждый модуль экспортирует `routes.ts` с `registerRoutes(app, deps)`; каркас (`apps/server/src/app.ts`, таск 01) подключает все `src/modules/*/routes.ts` автоматически. Общие файлы реестров таски не правят.
+2. **Маршруты клиента.** Каждая фича экспортирует `routes.tsx`; оболочка собирает `src/features/**/routes.tsx` через `import.meta.glob`.
+3. **Словари.** Строки лежат по пространствам имён: `packages/shared/src/i18n/<namespace>/ru.ts` и `ro.ts`; каркас собирает все пространства автоматически. Каждый таск добавляет только свои пространства.
+4. **Схемы API.** `packages/shared/src/schemas/<namespace>.ts`, один файл на модуль.
+5. **Миграции.** Номера блоками по таскам: 01 — 001–009, 02 — 010–019, 03 — 020–029, 04 — 030–039, 05 — 040–049, 06 — 050–059, 07 — 060–069, 08 — 070–079, 09 — 080–089, 10 — 090–099. Таски более поздней волны могут добавлять миграции только в свой блок.
+7. **Общий пакет без центрального индекса.** `packages/shared/package.json` экспортирует подпути (`"./*": "./src/*.ts"`); потребители импортируют `@sportpit/shared/targets`, `@sportpit/shared/schemas/billing`, `@sportpit/shared/i18n`. Общий `index.ts` таски не правят.
+6. **Планировщик.** Модуль, которому нужна фоновая задача, регистрирует её через `scheduler.register(name, cron, fn)` в своём `jobs.ts`; каркас подключает `src/modules/*/jobs.ts` автоматически.
+
+## Границы, решённые в спецификации
+
+### packages/shared
+Владеет: типами домена, схемами валидации (zod), словарями i18n, расчётом нормы КБЖУ (`calcTargets`), форматированием денег и дат.
+Отдаёт: `calcTargets(profile): Targets | { blocked: Reason }`, `formatMoney(bani, lang)`, `formatDate(iso, lang)`, `t(lang, key, params)`, схемы запросов и ответов API (`schemas.*`), перечисления (`Role`, `OrderStatus`, `WriteOffReason`, `LedgerReason`).
+Скрывает: детали библиотек валидации.
+
+### apps/server — модули (каждый в своей папке `src/modules/<name>`, публичный интерфейс в `index.ts`)
+
+| Модуль | Владеет | Отдаёт | Скрывает |
+|---|---|---|---|
+| `db` | подключением SQLite, миграциями, транзакциями | `db.tx(fn)`, `db.query` | драйвер `node:sqlite` |
+| `clock` | текущим временем и поясом | `Clock.now()`, `Clock.localDate()`, `Clock.cutoffFor(dateISO, cutoff)` | системные часы |
+| `auth` | OTP, сессиями, ролями, согласиями | `requestOtp(phone)`, `verifyOtp(phone, code)`, `requireRole(...roles)`, `currentUser(req)` | хранение кодов, лимиты |
+| `profile` | анкетой, нормой, удалением аккаунта, выгрузкой данных | `saveProfile`, `getTargets`, `deleteAccount`, `exportData` | формулы (в shared) |
+| `catalog` | блюдами, меню на дни, лимитами порций, рейтингами блюд | `listMenu(date, filters)`, `getDish(id)`, `upsertDish`, `publishMenu`, `portionsLeft(date, dishId)` | подсчёт рейтинга |
+| `billing` | пакетами, покупками, лотами кредитов, журналом, промокодами, возвратами, платёжным адаптером | `listPackages`, `startPurchase`, `handleGatewayCallback`, `balance(userId)`, `reserve`, `release`, `consume`, `refund`, `applyPromo` | выбор лота, идемпотентность |
+| `orders` | заказами, сроками, вместимостью, кодами выдачи | `confirmOrder`, `cancelOrder`, `moveOrder`, `listOrders`, `capacityLeft(fridgeId, date)` | правила срока и лимитов |
+| `fulfillment` | партиями, загрузкой, выдачей, списаниями, закрытием дня, температурой | `markCooked`, `markLoaded`, `pickupByClient`, `pickupByCode`, `closeDay`, `logTemperature` | статусы партий |
+| `kitchen` | сводкой производства и этикетками | `productionSummary(date)`, `labelData(batchId)` | расчёт запаса |
+| `feedback` | оценками, жалобами, решениями | `rateDish`, `createComplaint`, `resolveComplaint` | загрузка фото (через `FileStorage`) |
+| `tracker` | дневными итогами питания и ручными записями | `dayTotals(userId, date)`, `weekTotals`, `addEntry`, `deleteEntry` | — |
+| `reports` | отчётами и выгрузкой CSV | `salesReport`, `wasteReport`, `ratingsReport`, `shareReport`, `retentionReport`, `toCsv` | SQL-запросы |
+| `admin` | залами, холодильниками, настройками, пользователями, журналом действий | CRUD, `audit(userId, action, target)`, `getSetting`, `setSetting` | — |
+| `notifications` | внутренними уведомлениями | `notify(userId, type, payload)`, `list`, `markRead` | — |
+| `system` | событиями системы, здоровьем, задачами по расписанию, резервными копиями | `logEvent(kind, detail)`, `scheduler.start()`, `backup()` | планировщик |
+| `adapters` | `PaymentGateway`, `SmsSender`, `FileStorage` и их заглушками | интерфейсы и фабрики | выбор по переменным окружения |
+
+Зависимости: `orders` → `billing`, `catalog`, `admin`, `clock`; `fulfillment` → `orders`, `billing`; `kitchen` → `orders`, `fulfillment`, `catalog`; `reports` → всё читает только на чтение; `auth` и `system` ни от кого не зависят. Циклов нет.
+
+### apps/web — модули
+`src/app` — оболочка, маршруты, тема, переключатель языка, PWA и service worker.
+`src/api` — клиент API, один модуль, весь доступ к серверу здесь.
+`src/features/client/*` — вход, анкета, меню, пакеты, заказ, мои заказы, выдача, оценка и жалоба, трекер, профиль.
+`src/features/admin/*` — кухня, оператор, администратор (меню, цены, залы, холодильники, промокоды, жалобы, отчёты, события).
+`src/ui` — общие компоненты (кнопка, поле, карточка, диалог) с доступностью.
+Админка грузится отдельным чанком.
+
+## Контракты между тасками
+
+Решены заранее, чтобы параллельные и последовательные таски не расходились:
+
+1. **Рейтинг блюда.** Таск 03 создаёт таблицу `dish_rating_stats` и отдаёт `catalog.getDishRating(dishId): { avg: number | null, count: number }` и `catalog.applyRating(dishId, newStars, previousStars | null)`. Таск 09 вызывает только `applyRating`, таблицу не трогает.
+2. **Остаток порций.** `catalog.listMenu` принимает зарегистрированный поставщик занятых порций: `catalog.registerReservedProvider(fn(date, dishId) => number)`, по умолчанию 0. Таск 06 регистрирует его при старте; в ответ меню попадает `portionsLeft`.
+3. **Кредиты.** Таск 05 отдаёт `billing.balance(userId)`, `billing.reserve(userId, count, orderId)`, `billing.release(orderId)`, `billing.consume(orderId)`, `billing.grantComplaintCredit(userId, complaintId)`. Таск 06 пользуется ими, а `billing/pause.ts` добавляет сам.
+4. **Статусы заказа.** Перечисление в `@sportpit/shared/schemas/orders`: `confirmed`, `cancelled`, `loaded`, `picked_up`, `written_off`. Таск 06 создаёт и отменяет, таск 08 ставит `loaded`, `picked_up`, `written_off` через `orders.transition(orderId, to, actor)`.
+5. **Партии.** Таск 07 отдаёт `kitchen.batchesFor(fridgeId, date)` и `kitchen.markCooked`; таск 08 читает их при загрузке холодильника.
+6. **Уведомления.** Таск 02 отдаёт `notifications.notify(userId, type, payload)`; типы: `credits_expiring`, `rate_dish`, `complaint_resolved`, `system_alert`. Остальные таски только вызывают.
+7. **Сроки и вместимость.** Таск 03 хранит параметры холодильника (`capacityBoxes`, `cutoffTime`, `pickupFrom`, `pickupTo`, `accessCode`) и настройки (`maxBoxesPerDay`, `toleranceNote`, `stockBufferPercent`, `labelSize`, `supportContacts`); таск 06 читает их через `admin.getFridge`, `admin.getSetting` и сам применяет правила.
+8. **Журнал действий администратора.** Таск 03 отдаёт `admin.audit(userId, action, target)`; таски 05 и 09 вызывают его для возвратов, цен и решений по жалобам.
+
+## Швы для тестов
+
+1. HTTP API целиком через `fastify.inject` с базой в памяти (`:memory:`) — основной шов для серверных тестов.
+2. `Clock` — подмена времени для сроков, сгорания и закрытия дня.
+3. `PaymentGateway` — управляемая заглушка (успех, отказ, повтор колбэка).
+4. `SmsSender` — перехват отправленных кодов.
+5. Компоненты web — Testing Library; сквозные сценарии — Playwright (если браузеры доступны).
+
+## Что построено
+
+(заполняется по мере завершения тасков)
