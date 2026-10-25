@@ -1,10 +1,26 @@
 import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DictionaryModule } from '@sportpit/shared/i18n';
 import type { FeatureRoutesModule } from '../src/app/routes.tsx';
+import { resetSession } from '../src/features/client/auth/session.ts';
+import { installFakeApi, user } from './auth/fakeApi.ts';
 import { DARK, renderApp, setMedia } from './helpers.tsx';
+
+beforeEach(() => serveGuest());
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  resetSession();
+});
+
+/** Оболочка при каждом запуске спрашивает сервер, кто вошёл (колокольчик): в тестах отвечает поддельный сервер. */
+const serveGuest = () => installFakeApi({ 'GET /auth/me': () => ({ body: { user: null } }) });
+
+/** Админка открыта только сотрудникам: в этих тестах заходит администратор. */
+const signInAsAdmin = () =>
+  installFakeApi({ 'GET /auth/me': () => ({ body: { user: user({ role: 'admin' }) } }) });
 
 const RU_SLOGAN = 'Вкусно. Свежо. Чётко по КБЖУ';
 const probeDictionaries = import.meta.glob<DictionaryModule>('./fixtures/i18n/*/{ru,ro}.ts', {
@@ -172,6 +188,7 @@ describe('автообнаружение функций клиента и адм
   });
 
   it('админка грузится лениво на /admin и собирает свои модули', async () => {
+    signInAsAdmin();
     renderApp(
       { initialEntries: ['/admin/probe-admin'], adminModules: probeAdmin },
       { dictionaries: probeDictionaries },
@@ -185,6 +202,7 @@ describe('автообнаружение функций клиента и адм
   });
 
   it('пока в админке нет разделов, показывает пустое состояние, а не пустую страницу', async () => {
+    signInAsAdmin();
     renderApp({ initialEntries: ['/admin'] });
     expect(await screen.findByText('Разделов пока нет.')).toBeTruthy();
   });

@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { NotificationsBell } from '../features/client/notifications/Bell.tsx';
 import { OfflineBanner } from './connectivity.tsx';
 import { useT } from './i18n.tsx';
 import { InstallPrompt } from './install.tsx';
@@ -20,6 +21,7 @@ export function Shell({ nav }: { nav: NavItem[] }) {
           {t('core.appName')}
         </Link>
         <div className="shell__controls">
+          <NotificationsBell />
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
