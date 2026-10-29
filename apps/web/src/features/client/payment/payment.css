@@ -1,0 +1,12 @@
+/* Экраны оплаты: цвета и размеры — из токенов общей темы. */
+
+.pay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pay__actions .ui-button {
+  flex: 1 1 12rem;
+}
