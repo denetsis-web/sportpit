@@ -1,0 +1,135 @@
+/* Меню и карточка блюда: раскладка; цвета — из токенов общей темы. */
+
+.menu__slogan {
+  margin-bottom: var(--space-3);
+}
+
+.menu__tolerance {
+  margin-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.menu-days {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.menu-days__item {
+  flex: 0 0 auto;
+  min-width: var(--tap-size);
+  min-height: var(--tap-size);
+  padding: 0 var(--space-3);
+  border: 2px solid var(--color-input-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.menu-days__item[aria-pressed='true'] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.menu-filters {
+  margin-bottom: var(--space-4);
+}
+
+.menu-filters__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.menu-filters__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-size);
+}
+
+.menu-filters__check input {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.menu-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dish__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius);
+  margin-bottom: var(--space-3);
+}
+
+.dish__photo--empty {
+  background: var(--color-border);
+}
+
+.dish__photo--large {
+  max-height: 20rem;
+}
+
+.dish__name {
+  margin-bottom: var(--space-2);
+}
+
+.dish__kcal {
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.dish__macros {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.dish__macros dt {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.dish__macros dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.dish__tag {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dish__sold-out {
+  color: var(--color-danger-text);
+}
+
+.dish__reviews {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dish__reviews li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}

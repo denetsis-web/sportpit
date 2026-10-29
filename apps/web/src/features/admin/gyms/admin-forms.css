@@ -1,0 +1,150 @@
+/* Страницы админки каталога: списки, формы, таблицы. Цвета — из токенов общей темы. */
+
+.admin-textarea {
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+.admin-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-size);
+  margin-right: var(--space-4);
+}
+
+.admin-check input {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.admin-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.admin-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.admin-list__main {
+  flex: 1 1 12rem;
+}
+
+.admin-list__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.admin-list__meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.admin-fieldset {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: 0;
+}
+
+.admin-fieldset legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0 var(--space-3);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.admin-thumb {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+
+/* QR-плакат: на экране — карточка, при печати — только плакат. */
+.poster {
+  max-width: 24rem;
+  margin: 0 auto var(--space-4);
+  padding: var(--space-5);
+  text-align: center;
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  border-radius: var(--radius);
+}
+
+.poster__qr {
+  width: 100%;
+  max-width: 18rem;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.poster__link {
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
+@media print {
+  .shell__header,
+  .shell__nav,
+  .admin__nav,
+  .admin > h1,
+  .no-print {
+    display: none !important;
+  }
+
+  .poster {
+    border: 0;
+    max-width: none;
+  }
+}
