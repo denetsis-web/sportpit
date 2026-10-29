@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { CONSENT_VERSIONS } from '@sportpit/shared/schemas/auth';
 import { authFor } from '../../src/modules/auth/index.ts';
-import { as, login, makeApp, PHONE, userId, WRITE, type TestApp } from './helpers.ts';
+import {
+  as,
+  codeFromSms,
+  login,
+  makeApp,
+  OTHER_PHONE,
+  PHONE,
+  userId,
+  WRITE,
+  type TestApp,
+} from './helpers.ts';
 
 const consents = (test: TestApp, cookie?: string) =>
   test.app.inject({
@@ -179,6 +189,39 @@ describe('смена телефона и удаление аккаунта (дл
     expect(api.getUser(id)!.phone).toBe(PHONE);
     expect(api.changePhone(id, newPhone, code).phone).toBe(newPhone);
     expect(api.findByPhone(PHONE)).toBeUndefined();
+  });
+
+  it('без верного кода занятый и свободный номер отвечают одинаково, занятость выясняется только после кода', async () => {
+    const test = await makeApp();
+    await login(test, OTHER_PHONE); // номер занят другим человеком
+    test.clock.advance(2 * 60_000);
+    await login(test);
+    const api = authFor(test.app.deps);
+    const id = userId(test.app, PHONE);
+    const free = '+37369111222';
+    const outcome = (phone: string, code: string) => {
+      try {
+        api.changePhone(id, phone, code);
+        return 'ok';
+      } catch (error) {
+        const { status, code } = error as { status?: number; code?: string };
+        return `${status}:${code}`;
+      }
+    };
+    // кода на эти номера не запрашивали: ответ один и тот же, 409 не просачивается
+    expect(outcome(OTHER_PHONE, '123456')).toBe('400:otp_expired');
+    expect(outcome(free, '123456')).toBe('400:otp_expired');
+    // верный код на занятый номер: теперь 409, номер прежний
+    test.clock.advance(2 * 60_000);
+    await test.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/otp/request',
+      payload: { phone: OTHER_PHONE },
+      headers: WRITE,
+    });
+    const code = codeFromSms(test.sms, OTHER_PHONE);
+    expect(outcome(OTHER_PHONE, code)).toBe('409:phone_taken');
+    expect(api.getUser(id)!.phone).toBe(PHONE);
   });
 
   it('удаление аккаунта стирает телефон и закрывает сессии, строка пользователя и согласия остаются', async () => {

@@ -110,9 +110,8 @@ export function authFor(deps: AuthDeps): AuthApi {
     hasConsent: (userId, kind) => hasConsent(db, userId, kind),
     recordConsents: (userId, changes) => recordConsents(db, clock, userId, changes),
     changePhone(userId, newPhone, code) {
-      if (findUserByPhone(db, newPhone)) {
-        throw new AppError(409, 'phone_taken', 'auth.error.phoneTaken');
-      }
+      // Сначала код на новый номер, потом занятость: без верного кода занятый и свободный номер
+      // неотличимы (иначе вошедший перебирал бы чужие номера без счётчика попыток).
       otp.check(newPhone, code);
       return replacePhone(db, userId, newPhone);
     },
