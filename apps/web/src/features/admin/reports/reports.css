@@ -1,0 +1,206 @@
+/* Отчёты и события системы: цвета и размеры — из токенов общей темы. */
+
+.reports {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.reports__period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.reports__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.reports__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.reports__download {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-size);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  color: var(--color-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.reports__download:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.reports__lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.reports__totals {
+  margin: 0;
+  font-weight: 600;
+}
+
+.reports__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.reports__card {
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.reports__card dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.reports__card dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.reports__pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.reports__list {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.reports__num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---- графики ---- */
+
+.chart {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.chart__columns {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 8rem;
+  border-bottom: 1px solid var(--color-text-muted);
+}
+
+.chart__group {
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  gap: 1px;
+  height: 100%;
+  min-width: 0;
+}
+
+.chart__column {
+  flex: 1 1 0;
+  min-height: 1px;
+  background: var(--color-primary);
+}
+
+.chart__column--0 {
+  background: var(--color-primary);
+}
+
+.chart__column--1 {
+  background: var(--color-danger);
+}
+
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.chart__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chart__swatch {
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 2px;
+}
+
+.chart__bars {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.chart__bar-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(4rem, 2fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.chart__bar-track {
+  display: block;
+  height: 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.chart__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+}
+
+.chart__bar-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 30rem) {
+  .chart__bar-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .chart__bar-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
