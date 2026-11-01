@@ -61,15 +61,21 @@ describe('каркас сервера', () => {
 
   it('файлы из хранилища отдаются по /api/v1/files/…, чужие ключи и пропажа — JSON-ошибка', async () => {
     const app = await make();
-    await app.deps.storage.put('complaints/a1.png', new Uint8Array([1, 2, 3]));
-    const ok = await app.inject({ method: 'GET', url: '/api/v1/files/complaints/a1.png' });
+    await app.deps.storage.put('dishes/a1.png', new Uint8Array([1, 2, 3]));
+    const ok = await app.inject({ method: 'GET', url: '/api/v1/files/dishes/a1.png' });
     expect(ok.statusCode).toBe(200);
     expect(ok.headers['content-type']).toBe('image/png');
     expect(ok.headers['x-content-type-options']).toBe('nosniff');
     expect([...ok.rawPayload]).toEqual([1, 2, 3]);
-    const missing = await app.inject({ method: 'GET', url: '/api/v1/files/complaints/none.png' });
+    const missing = await app.inject({ method: 'GET', url: '/api/v1/files/dishes/none.png' });
     expect(missing.statusCode).toBe(404);
     expect(missing.json().error.code).toBe('not_found');
+    // приватный префикс (фото жалоб) публичным путём не отдаётся, даже если файл лежит в хранилище
+    await app.deps.storage.put('complaints/a1.png', new Uint8Array([1, 2, 3]));
+    for (const key of ['complaints/a1.png', 'Complaints/a1.png']) {
+      const hidden = await app.inject({ method: 'GET', url: `/api/v1/files/${key}` });
+      expect(hidden.statusCode, key).toBe(404);
+    }
     const evil = await app.inject({ method: 'GET', url: '/api/v1/files/..%2F..%2Fsecret' });
     expect(evil.statusCode).toBe(404);
   });

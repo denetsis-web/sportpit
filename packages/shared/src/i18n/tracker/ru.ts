@@ -1,0 +1,87 @@
+// Пространство tracker: дневник питания — итоги дня и недели, выданные боксы, ручные записи.
+const ru = {
+  'nav.tracker': 'Трекер питания',
+
+  // ---- ошибки (ключи отдаёт сервер) ----
+  'error.date': 'Укажите дату в формате ГГГГ-ММ-ДД.',
+  'error.name': 'Введите название (до 100 символов).',
+  'error.number': 'Введите число не меньше нуля и не больше допустимого.',
+  'error.empty': 'Нет полей для изменения.',
+  'error.entryNotFound': 'Запись не найдена.',
+
+  title: 'Трекер питания',
+  lead: 'Выданные боксы вносятся сами. Съели что-то ещё: добавьте запись вручную.',
+  loadError: 'Не удалось загрузить данные трекера.',
+
+  'view.label': 'Период',
+  'view.day': 'День',
+  'view.week': 'Неделя',
+  'date.label': 'Дата',
+  'date.prev': 'Предыдущий',
+  'date.next': 'Следующий',
+  'date.today': 'Сегодня',
+
+  'nutrient.calories': 'Калории',
+  'nutrient.proteinG': 'Белки',
+  'nutrient.fatG': 'Жиры',
+  'nutrient.carbsG': 'Углеводы',
+  'nutrient.fiberG': 'Клетчатка',
+  'unit.kcal': 'ккал',
+  'unit.g': 'г',
+  'value.kcal': '{value} ккал',
+  'value.g': '{value} г',
+
+  'progress.title': 'Прогресс дня',
+  'progress.of': '{value} из {target}',
+  'progress.label': '{name}: {value} из {target}',
+  'progress.noTarget': '{name}: {value}',
+  noTarget: 'Заполните анкету цели, чтобы видеть норму дня.',
+  fillProfile: 'Заполнить анкету',
+  blocked: 'Для нормы дня обратитесь к врачу.',
+
+  'boxes.title': 'Выданные боксы',
+  'boxes.none': 'В этот день выданных боксов нет.',
+  'boxes.line': '{name} × {count}',
+  'boxes.summary': '{calories} ккал',
+
+  'entries.title': 'Ручные записи',
+  'entries.none': 'Ручных записей нет.',
+  'entry.add': 'Добавить запись',
+  'entry.edit': 'Изменить',
+  'entry.editLabel': 'Изменить запись «{name}»',
+  'entry.delete': 'Удалить',
+  'entry.deleteLabel': 'Удалить запись «{name}»',
+  'entry.deleteConfirm': 'Удалить запись «{name}»?',
+  'entry.name': 'Название',
+  'entry.calories': 'Калории, ккал',
+  'entry.proteinG': 'Белки, г',
+  'entry.fatG': 'Жиры, г',
+  'entry.carbsG': 'Углеводы, г',
+  'entry.fiberG': 'Клетчатка, г',
+  'entry.save': 'Сохранить',
+  'entry.cancel': 'Отмена',
+  'entry.saved': 'Запись сохранена.',
+  'entry.deleted': 'Запись удалена.',
+  'entry.formTitleAdd': 'Новая запись',
+  'entry.formTitleEdit': 'Изменить запись',
+  'entry.invalidNumber': 'Введите число от 0, без минуса.',
+  'entry.invalidName': 'Введите название.',
+
+  'empty.title': 'За этот день пока ничего нет',
+  'empty.body':
+    'Выбирайте блюда, заказывайте боксы: выданные вносятся сюда сами. Съели что-то своё: добавьте запись вручную.',
+  'empty.action': 'Выбрать блюда',
+
+  'week.title': 'Неделя',
+  'week.range': '{from} — {to}',
+  'week.chart': 'Калории по дням недели',
+  'week.target': 'Цель: {value} ккал в день',
+  'week.noTarget': 'Цели нет: заполните анкету, и здесь появится норма.',
+  'week.day': 'День',
+  'week.boxes': 'Боксов',
+  'week.entries': 'Записей',
+  'week.open': 'Открыть день {date}',
+  'week.average': 'В среднем за дни с данными: {value} ккал',
+} as const;
+
+export default ru;

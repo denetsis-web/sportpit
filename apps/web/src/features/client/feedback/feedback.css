@@ -1,0 +1,104 @@
+/* Оценка блюд: раскладка; цвета и размеры — из токенов общей темы. */
+
+.feedback {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rate-order__where {
+  color: var(--color-text-muted);
+}
+
+.rate-order__dish {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) 0;
+}
+
+.dish-rating {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.dish-rating fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.dish-rating legend {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+.dish-rating__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dish-rating__note {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.star,
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-size);
+  min-height: var(--tap-size);
+  cursor: pointer;
+}
+
+.star input,
+.chip input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.star__glyph {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-input-border);
+}
+
+.star[data-on='true'] .star__glyph {
+  color: var(--color-warning-text);
+}
+
+.chip span {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.chip[data-on='true'] span {
+  border-color: var(--color-primary);
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+  font-weight: 600;
+}
+
+.star:focus-within,
+.chip:focus-within {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,88 @@
+/* «Поддержка» и форма жалобы: раскладка; цвета и размеры — из токенов общей темы. */
+
+.support,
+.complaint-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.support__contacts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+
+.support__contacts dt {
+  color: var(--color-text-muted);
+}
+
+.support__contacts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.support__list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.complaint {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.complaint__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.complaint__head h2,
+.complaint__head h3 {
+  margin: 0;
+}
+
+.complaint__status {
+  font-weight: 600;
+}
+
+.complaint__status--rejected {
+  color: var(--color-danger-text);
+}
+
+.complaint__status--resolved {
+  color: var(--color-success-text);
+}
+
+.complaint__meta {
+  color: var(--color-text-muted);
+}
+
+.complaint__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.complaint__photos img {
+  max-width: 10rem;
+  max-height: 10rem;
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
+.complaint__history {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.admin-complaint__actions,
+.admin-complaint__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
