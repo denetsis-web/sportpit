@@ -22,7 +22,7 @@ function registerFakeModules(test: TestApp, ids: { mine: number; other: number }
     [ids.other, [{ dish: 'dish-B', stars: 1 }]],
   ]);
   const calls: number[] = [];
-  registerExportProvider(test.app.deps, 'orders', (userId) => {
+  registerExportProvider(test.app.deps, 'fake_orders', (userId) => {
     calls.push(userId);
     return { items: orders.get(userId) ?? [] };
   });
@@ -56,7 +56,7 @@ describe('выгрузка данных (R29.1)', () => {
     expect(body.consents.find((c: { kind: string }) => c.kind === 'health_data')).toMatchObject({
       granted: true,
     });
-    expect(body.data.orders).toEqual({ items: [{ id: 'order-A1', date: '2026-03-12' }] });
+    expect(body.data.fake_orders).toEqual({ items: [{ id: 'order-A1', date: '2026-03-12' }] });
     expect(body.data.ratings).toEqual({ items: [{ dish: 'dish-A', stars: 5 }] });
     expect(typeof body.exportedAt).toBe('string');
   });
@@ -80,7 +80,7 @@ describe('выгрузка данных (R29.1)', () => {
     expect(theirs.json().user.phone).toBe(OTHER_PHONE);
     expect(theirs.body).not.toContain(PHONE);
     expect(theirs.body).not.toContain('order-A1');
-    expect(theirs.json().data.orders.items).toEqual([{ id: 'order-B1', date: '2026-03-12' }]);
+    expect(theirs.json().data.fake_orders.items).toEqual([{ id: 'order-B1', date: '2026-03-12' }]);
   });
 
   it('без зарегистрированных модулей выгрузка всё равно работает: профиль и согласия', async () => {
@@ -94,7 +94,7 @@ describe('выгрузка данных (R29.1)', () => {
   it('сбой поставщика не даёт неполной выгрузки: 500', async () => {
     const test = await makeApp();
     const cookie = await clientWithConsent(test, PHONE);
-    profileFor(test.app.deps).registerExportProvider('orders', () => {
+    profileFor(test.app.deps).registerExportProvider('fake_orders', () => {
       throw new Error('сбой модуля');
     });
     expect((await api(test, 'GET', '/profile/export', cookie)).statusCode).toBe(500);
@@ -103,8 +103,8 @@ describe('выгрузка данных (R29.1)', () => {
   it('имя поставщика проверяется, повторная регистрация отвергается', async () => {
     const test = await makeApp();
     const profile = profileFor(test.app.deps);
-    profile.registerExportProvider('orders', () => ({}));
-    expect(() => profile.registerExportProvider('orders', () => ({}))).toThrow();
+    profile.registerExportProvider('fake_orders', () => ({}));
+    expect(() => profile.registerExportProvider('fake_orders', () => ({}))).toThrow();
     expect(() => profile.registerExportProvider('Bad Name', () => ({}))).toThrow();
   });
 });
