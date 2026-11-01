@@ -1,0 +1,35 @@
+/* Выдача для оператора: раскладка; цвета и размеры — из токенов общей темы. */
+
+.operator {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.operator__list {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.operator-form {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 24rem;
+}
+
+.operator-temp__list {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* Значение вне 0…+5 °C: не только цвет, но и рамка и слово «вне диапазона». */
+.operator-temp--out {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-danger);
+  border-radius: var(--radius);
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  font-weight: 600;
+}

@@ -1,0 +1,51 @@
+/* Получение бокса: раскладка; цвета и размеры — из токенов общей темы. */
+
+.pickup {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.pickup__list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.pickup-card__status {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.pickup-card__label {
+  color: var(--color-text-muted);
+  margin-bottom: 0;
+}
+
+.pickup-card__code {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  margin: 0 0 var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pickup-card__qr {
+  display: block;
+  width: 12rem;
+  height: 12rem;
+  max-width: 100%;
+  margin: 0 0 var(--space-3);
+  background: #ffffff;
+  border-radius: var(--radius);
+}
+
+.pickup-card__lock {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  margin: 0 0 var(--space-1);
+}
+
+.pickup-card__items {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
