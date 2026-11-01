@@ -1,0 +1,75 @@
+.kitchen-list {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.kitchen-batch {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Этикетки на экране: рамкой видно, как ляжет текст на выбранный размер. */
+.label-sheets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.label-sheet {
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 2mm;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+  font-size: 6.5pt;
+  line-height: 1.15;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.label-sheet p,
+.label-sheet h3 {
+  margin: 0 0 0.6mm;
+}
+
+.label-sheet__name {
+  font-size: 9pt;
+  line-height: 1.1;
+}
+
+.label-sheet__name--ro {
+  font-weight: 400;
+  font-style: italic;
+}
+
+.label-sheet__code {
+  font-size: 8pt;
+}
+
+@media print {
+  .shell__header,
+  .shell__nav,
+  .admin__nav,
+  .admin > h1,
+  .no-print {
+    display: none !important;
+  }
+
+  .label-sheets {
+    display: block;
+  }
+
+  /* одна этикетка = одна страница размера этикетки */
+  .label-sheet {
+    border: 0;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .label-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
