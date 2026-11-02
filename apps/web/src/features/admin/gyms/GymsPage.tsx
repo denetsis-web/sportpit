@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
+import { formatDecimal } from '@sportpit/shared/format';
 import { gymListSchema, gymSchema, type GymDto } from '@sportpit/shared/schemas/admin';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
 import {
   AdminOnly,
   CheckField,
@@ -10,7 +11,6 @@ import {
   fieldErrors,
   numberOrNull,
   toNumber,
-  useResource,
 } from './common.tsx';
 
 interface Draft {
@@ -28,7 +28,7 @@ function toDraft(gym: GymDto): Draft {
     id: gym.id,
     name: gym.name,
     address: gym.address ?? '',
-    sharePercent: String(gym.sharePercent).replace('.', ','),
+    sharePercent: formatDecimal(gym.sharePercent),
     active: gym.active,
   };
 }
@@ -133,7 +133,7 @@ export function GymsPage() {
                 {[
                   gym.address,
                   t('admin.gyms.share.value', {
-                    value: String(gym.sharePercent).replace('.', ','),
+                    value: formatDecimal(gym.sharePercent),
                   }),
                 ]
                   .filter(Boolean)

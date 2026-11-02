@@ -4,6 +4,7 @@
 //   Администратор (только /admin/...): блюда, фото, меню на дни.
 import '@fastify/multipart';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { z } from 'zod';
 import {
   copyMenuSchema,
   dateSchema,
@@ -16,16 +17,18 @@ import {
 } from '@sportpit/shared/schemas/catalog';
 import { addDaysISO } from '@sportpit/shared/time';
 import type { AppDeps, AppInstance } from '../../app.ts';
-import { parseBody } from '../admin/validate.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
 import { AppError, errors } from '../system/errors.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { catalogFor } from './index.ts';
+
+const parseBody = <S extends z.ZodType>(schema: S, body: unknown) =>
+  parseWith(schema, body, ['admin', 'catalog']);
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const catalog = catalogFor(deps);
   const guard = { preHandler: requireRole('admin') };
   const actor = (req: FastifyRequest): number => currentUser(req)!.id;
-  const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
   const revalidate = (reply: FastifyReply) => reply.header('cache-control', 'no-cache');
 
   const dishIdOf = (req: FastifyRequest): number => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { adminFor } from '../../src/modules/admin/index.ts';
 import {
   as,
   login,
@@ -195,5 +196,76 @@ describe('управление ролями (администратор)', () =>
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe('own_role');
+  });
+
+  const put = (test: TestApp, url: string, cookie: string, payload: unknown) =>
+    test.app.inject({
+      method: 'PUT',
+      url: `/api/v1${url}`,
+      payload: payload as object,
+      headers: as(cookie, WRITE),
+    });
+
+  it('смена роли и холодильников оператора пишется в журнал действий', async () => {
+    const test = await makeApp();
+    const admin = await loginAs(test, PHONE, 'admin');
+    await login(test, OTHER_PHONE);
+    const target = userId(test.app, OTHER_PHONE);
+    const adminId = userId(test.app, PHONE);
+
+    expect(
+      (await put(test, `/auth/users/${target}/role`, admin, { role: 'operator' })).statusCode,
+    ).toBe(200);
+    expect(
+      (await put(test, `/auth/users/${target}/fridges`, admin, { fridgeIds: ['3', '5'] }))
+        .statusCode,
+    ).toBe(200);
+
+    const entries = adminFor(test.app.deps).listAudit().items;
+    expect(entries.find((e) => e.action === 'user.role')).toMatchObject({
+      userId: adminId,
+      target: `user:${target}`,
+      detail: { from: 'client', to: 'operator' },
+    });
+    expect(entries.find((e) => e.action === 'user.fridges')).toMatchObject({
+      userId: adminId,
+      target: `user:${target}`,
+      detail: { fridgeIds: ['3', '5'] },
+    });
+  });
+
+  it('снять роль operator и назначить заново — холодильников нет', async () => {
+    const test = await makeApp();
+    const admin = await loginAs(test, PHONE, 'admin');
+    await login(test, OTHER_PHONE);
+    const target = userId(test.app, OTHER_PHONE);
+    await put(test, `/auth/users/${target}/role`, admin, { role: 'operator' });
+    await put(test, `/auth/users/${target}/fridges`, admin, { fridgeIds: ['3'] });
+
+    await put(test, `/auth/users/${target}/role`, admin, { role: 'client' });
+    expect(
+      test.app.deps.db.query('SELECT 1 FROM operator_fridges WHERE user_id = ?', [target]),
+    ).toHaveLength(0);
+    const again = await put(test, `/auth/users/${target}/role`, admin, { role: 'operator' });
+    expect(again.json().user.fridgeIds).toEqual([]);
+  });
+
+  it('PATCH /auth/me с полем role роль не меняет', async () => {
+    const test = await makeApp();
+    const client = await login(test, OTHER_PHONE);
+    const res = await test.app.inject({
+      method: 'PATCH',
+      url: '/api/v1/auth/me',
+      payload: { lang: 'ro', role: 'admin' },
+      headers: as(client, WRITE),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().user).toMatchObject({ role: 'client', lang: 'ro' });
+    expect(
+      test.app.deps.db.get<{ role: string }>('SELECT role FROM users WHERE phone = ?', [
+        OTHER_PHONE,
+      ])!.role,
+    ).toBe('client');
+    expect((await get(test, '/auth/users', client)).statusCode).toBe(403);
   });
 });

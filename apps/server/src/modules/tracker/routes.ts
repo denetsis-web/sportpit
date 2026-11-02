@@ -4,7 +4,7 @@
 //   POST   /tracker/entries           — новая ручная запись;
 //   PATCH  /tracker/entries/:id       — правка записи;
 //   DELETE /tracker/entries/:id       — удаление записи.
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   dayQuerySchema,
@@ -13,23 +13,11 @@ import {
 } from '@sportpit/shared/schemas/tracker';
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
-import { AppError, errors } from '../system/errors.ts';
+import { AppError } from '../system/errors.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { trackerFor } from './index.ts';
 
-const OWN_KEY = /^tracker\.error\./;
-
-function parse<S extends z.ZodType>(schema: S, body: unknown): z.infer<S> {
-  const result = schema.safeParse(body ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = issue.path.map(String).join('.') || '_';
-    fields[name] ??= OWN_KEY.test(issue.message) ? issue.message : 'core.error.validation';
-  }
-  throw errors.validation(fields);
-}
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
+const parse = <S extends z.ZodType>(schema: S, body: unknown) => parseWith(schema, body, 'tracker');
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const tracker = trackerFor(deps);

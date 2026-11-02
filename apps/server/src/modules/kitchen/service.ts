@@ -27,7 +27,6 @@ import { AppError } from '../system/errors.ts';
 
 export type { BatchDto, FridgeBatchDto, LabelData, ProductionSummary, CookedTotalRow };
 
-const DEFAULT_CUTOFF = '18:00';
 /** Сколько прошедших дней задача перебирает в поисках незакрытых сводок. */
 const LOOKBACK_DAYS = 7;
 const MAX_REPORT_DAYS = 366;
@@ -139,8 +138,7 @@ export function createKitchenService(deps: AppDeps): KitchenApi {
 
   // ---- холодильники и закрытие ----
 
-  const cutoffAt = (fridgeId: string, date: string): Date =>
-    clock.cutoffFor(date, admin.getFridge(fridgeId)?.cutoffTime ?? DEFAULT_CUTOFF);
+  const cutoffAt = admin.cutoffAt;
 
   /** Холодильники, для которых нужна сводка: активные и те, где есть заказы на дату. */
   function relevantFridges(date: string, ordered: Set<string>): string[] {

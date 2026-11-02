@@ -1,11 +1,8 @@
-import { configure, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 import { apiError, cleanUp, installFakeApi, pickupView, renderAt, user } from './fixtures.tsx';
-
-vi.setConfig({ testTimeout: 20_000 });
-configure({ asyncUtilTimeout: 8000 });
 
 afterEach(cleanUp);
 

@@ -1,9 +1,8 @@
 // «Поддержка» (R30.1): контакты из настроек, кнопка «Проблема с боксом» и статусы обращений.
-import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ComplaintDto, SupportDto } from '@sportpit/shared/schemas/feedback';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card } from '../../../ui/index.ts';
+import { Banner, Button, Card, useResource } from '../../../ui/index.ts';
 import { RequireRole } from '../auth/guards.tsx';
 import { fetchSupport } from './api.ts';
 import './support.css';
@@ -57,31 +56,17 @@ function ComplaintCard({ complaint }: { complaint: ComplaintDto }) {
 
 function SupportContent() {
   const { t } = useI18n();
-  const [state, setState] = useState<
-    { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: SupportDto }
-  >({ status: 'loading' });
+  const { data, error, reload } = useResource<SupportDto>(fetchSupport);
 
-  const load = useCallback(async () => {
-    try {
-      setState({ status: 'ready', data: await fetchSupport() });
-    } catch {
-      setState((prev) => (prev.status === 'ready' ? prev : { status: 'error' }));
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  if (state.status === 'loading') return <p role="status">{t('core.loading')}</p>;
-  if (state.status === 'error') {
+  if (data === undefined && error === undefined) return <p role="status">{t('core.loading')}</p>;
+  if (data === undefined) {
     return (
       <>
         <h1>{t('feedback.support.title')}</h1>
         <Banner
           variant="error"
           action={
-            <Button variant="secondary" onClick={() => void load()}>
+            <Button variant="secondary" onClick={reload}>
               {t('core.action.retry')}
             </Button>
           }
@@ -92,7 +77,7 @@ function SupportContent() {
     );
   }
 
-  const { contacts, complaints } = state.data;
+  const { contacts, complaints } = data;
   return (
     <div className="support">
       <h1>{t('feedback.support.title')}</h1>

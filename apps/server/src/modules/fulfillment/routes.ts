@@ -8,7 +8,7 @@
 //   GET|POST /operator/fridges/:id/temperature     — журнал температуры и ввод замера.
 // Администратор: GET /admin/temperature/missed?from&to — пропущенные замеры.
 // Клиент: GET /pickup/orders · GET /pickup/orders/:id · POST /pickup/orders/:id/pickup («Забрал»).
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   closeDaySchema,
@@ -23,24 +23,14 @@ import { addDaysISO } from '@sportpit/shared/time';
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireFridgeAccess, requireRole } from '../auth/index.ts';
 import type { OrderActor } from '../orders/index.ts';
-import { AppError, errors, pickLang } from '../system/index.ts';
+import { AppError, pickLang } from '../system/index.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { fulfillmentFor } from './index.ts';
 
-const OWN_KEY = /^fulfillment\.error\./;
 const ORDER_ID = /^[A-Za-z0-9-]{1,64}$/;
 
-function parse<S extends z.ZodType>(schema: S, value: unknown): z.infer<S> {
-  const result = schema.safeParse(value ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = issue.path.map(String).join('.') || '_';
-    fields[name] ??= OWN_KEY.test(issue.message) ? issue.message : 'core.error.validation';
-  }
-  throw errors.validation(fields);
-}
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
+const parse = <S extends z.ZodType>(schema: S, body: unknown) =>
+  parseWith(schema, body, 'fulfillment');
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const fulfillment = fulfillmentFor(deps);

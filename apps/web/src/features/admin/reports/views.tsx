@@ -1,5 +1,6 @@
 // Виды отчётов: у каждого своя таблица, график и итоги. Тексты — из словаря `reports`.
 import type { ReactNode } from 'react';
+import { formatDecimal } from '@sportpit/shared/format';
 import type { Lang } from '@sportpit/shared/i18n';
 import type {
   PageInfo,
@@ -15,10 +16,10 @@ import { BarList, ColumnChart } from './charts.tsx';
 
 /** Процент с запятой и знаком; нет данных — подпись из словаря. */
 export function percentText(value: number | null, t: TFunction): string {
-  return value === null ? t('reports.waste.percent.none') : `${String(value).replace('.', ',')} %`;
+  return value === null ? t('reports.waste.percent.none') : `${formatDecimal(value)} %`;
 }
 
-const numberText = (value: number): string => String(value).replace('.', ',');
+const numberText = (value: number): string => formatDecimal(value);
 
 export function Pager({ page, onPage }: { page: PageInfo; onPage: (next: number) => void }) {
   const { t } = useI18n();

@@ -8,15 +8,8 @@ import {
 import { addDaysISO, localDateISO } from '@sportpit/shared/time';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
-import {
-  AdminOnly,
-  errorText,
-  fieldErrors,
-  SelectField,
-  toNumber,
-  useResource,
-} from '../gyms/common.tsx';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
+import { AdminOnly, errorText, fieldErrors, SelectField, toNumber } from '../gyms/common.tsx';
 
 interface Row {
   dishId: number;

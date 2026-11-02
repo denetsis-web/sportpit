@@ -1,4 +1,4 @@
-import { configure, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -7,8 +7,6 @@ import { cleanUp } from '../auth/render.tsx';
 import { card, item, menu, renderAt, TODAY, TOMORROW } from './fixtures.tsx';
 
 // при полном прогоне на нагруженной машине 1 секунды ожидания экрана мало
-vi.setConfig({ testTimeout: 20_000 });
-configure({ asyncUtilTimeout: 8000 });
 
 afterEach(cleanUp);
 
@@ -83,7 +81,7 @@ describe('меню: карточки (R18, R03)', () => {
     expect(within(dish).getByText('Proteine')).toBeTruthy();
     expect(within(dish).getByText('fără evaluări')).toBeTruthy();
     expect(within(dish).getByText('Vom găti în seara dinainte')).toBeTruthy();
-    expect(screen.getByText('Toleranță KBJU: ±5% la proteine')).toBeTruthy();
+    expect(screen.getByText('Toleranță valori nutriționale: ±5% la proteine')).toBeTruthy();
   });
 
   it('нет автоматических нарушений доступности', async () => {

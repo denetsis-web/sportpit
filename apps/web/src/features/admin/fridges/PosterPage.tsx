@@ -3,9 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { fridgeSchema } from '@sportpit/shared/schemas/admin';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button } from '../../../ui/index.ts';
+import { Banner, Button, useResource } from '../../../ui/index.ts';
 import { fridgeLink } from '../../client/menu/fridge.ts';
-import { AdminOnly, errorText, useResource } from '../gyms/common.tsx';
+import { AdminOnly, errorText } from '../gyms/common.tsx';
 
 /** QR-код адреса в виде SVG-картинки (data URI); библиотека грузится только в админке и только здесь. */
 export function useQrImage(text: string): string | null {

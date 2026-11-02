@@ -243,6 +243,67 @@ describe('идемпотентность денег', () => {
   });
 });
 
+describe('сверка суммы и валюты платежа', () => {
+  const mismatch = [
+    ['сумма меньше', { amountBani: 100 }],
+    ['сумма больше', { amountBani: 12 * 11900 + 1 }],
+    ['другая валюта', { currency: 'EUR' }],
+  ] as const;
+
+  it.each(mismatch)(
+    'колбэк: %s — кредиты не зачисляются, пишется payment_failed',
+    async (_name, tamper) => {
+      const test = await pendingApp();
+      const { body } = await buy(test, test.client, 12);
+      const paymentId = providerPaymentIdOf(test, body.purchase.id);
+      test.stub.complete(paymentId, 'paid');
+      const callback = test.stub.callbackFor(paymentId);
+      const res = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/webhooks/payment',
+        headers: callback.headers as Record<string, string>,
+        payload: { ...(callback.body as object), ...tamper },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(test.billing.balance(test.clientId)).toBe(0);
+      const status = await call(test, 'GET', `/purchases/${body.purchase.id}`, test.client);
+      expect(status.json().purchase.status).toBe('pending');
+      const events = test.app.deps.system.events.list({ kind: 'payment_failed' });
+      expect(events).toHaveLength(1);
+      expect(events[0]!.detail).toMatchObject({
+        purchaseId: body.purchase.id,
+        code: 'amount_mismatch',
+        expectedBani: 12 * 11900,
+      });
+    },
+  );
+
+  it('опрос шлюза: банк сообщил другую сумму — кредитов нет, событие записано', async () => {
+    const test = await pendingApp();
+    const { body } = await buy(test, test.client, 12);
+    const paymentId = providerPaymentIdOf(test, body.purchase.id);
+    test.stub.complete(paymentId, 'paid'); // колбэк потерялся
+    test.stub.reportAmount(paymentId, 100);
+    test.clock.advance(60_000);
+
+    const status = await call(test, 'GET', `/purchases/${body.purchase.id}`, test.client);
+
+    expect(status.json().purchase.status).toBe('pending');
+    expect(test.billing.balance(test.clientId)).toBe(0);
+    expect(test.app.deps.system.events.list({ kind: 'payment_failed' })).toHaveLength(1);
+  });
+
+  it('верная сумма и валюта зачисляются как раньше', async () => {
+    const test = await pendingApp();
+    const { body } = await buy(test, test.client, 12);
+    const paymentId = providerPaymentIdOf(test, body.purchase.id);
+    test.stub.complete(paymentId, 'paid');
+    expect((await gatewayCallback(test, paymentId)).statusCode).toBe(200);
+    expect(test.billing.balance(test.clientId)).toBe(12);
+    expect(test.app.deps.system.events.list({ kind: 'payment_failed' })).toHaveLength(0);
+  });
+});
+
 describe('колбэк шлюза: защита', () => {
   it('неверная подпись — 400, ничего не меняется', async () => {
     const test = await pendingApp();
@@ -268,7 +329,13 @@ describe('колбэк шлюза: защита', () => {
       method: 'POST',
       url: '/api/v1/webhooks/payment',
       headers: { 'x-stub-signature': 'stub' },
-      payload: { providerPaymentId: 'stub_unknown', status: 'paid', eventId: 'e1' },
+      payload: {
+        providerPaymentId: 'stub_unknown',
+        status: 'paid',
+        eventId: 'e1',
+        amountBani: 100,
+        currency: 'MDL',
+      },
     });
     expect(res.statusCode).toBe(404);
   });

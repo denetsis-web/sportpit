@@ -68,7 +68,7 @@ const ro: DictionaryOf<typeof ru> = {
   'dish.back': 'Înapoi la meniu',
   'dish.composition': 'Compoziție',
   'dish.weight': 'Greutatea porției: {value} g',
-  'dish.nutrition': 'KBJU pe porție',
+  'dish.nutrition': 'Valori nutriționale pe porție',
   'dish.reviews': 'Recenzii',
   'dish.reviews.empty': 'Nu există încă recenzii.',
   'dish.notOnMenu': 'Acest fel nu este în meniul zilei alese.',
@@ -76,7 +76,7 @@ const ro: DictionaryOf<typeof ru> = {
   'tag.taste': 'Gust',
   'tag.freshness': 'Prospețime',
   'tag.portion': 'Porție',
-  'tag.kbzhu': 'KBJU',
+  'tag.kbzhu': 'Valori nutriționale',
 
   'error.date': 'Indicați data în formatul AAAA-LL-ZZ.',
   'error.name': 'Denumirea este obligatorie, cel mult 120 de caractere.',

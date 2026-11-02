@@ -166,7 +166,7 @@ export const SETTING_DEFAULTS: SettingValues = {
   maxBoxesPerDay: 3,
   toleranceNote: {
     ru: 'Допуск КБЖУ: ±5% по белку',
-    ro: 'Toleranță KBJU: ±5% la proteine',
+    ro: 'Toleranță valori nutriționale: ±5% la proteine',
   },
   stockBufferPercent: 0,
   labelSize: '70x50',

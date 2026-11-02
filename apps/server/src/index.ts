@@ -1,9 +1,16 @@
 // Точка входа сервера: `npm run dev -w @sportpit/server` или `npm start`.
 import { buildApp } from './app.ts';
-import { loadConfig, loadDotEnv, redactedConfig } from './modules/system/index.ts';
+import {
+  assertProductionConfig,
+  loadConfig,
+  loadDotEnv,
+  redactedConfig,
+} from './modules/system/index.ts';
 
 loadDotEnv();
 const config = loadConfig();
+// production с заглушками, без https или без SESSION_SECRET не стартует (если нет ALLOW_STUB_IN_PRODUCTION=1)
+assertProductionConfig(config);
 
 const app = await buildApp({
   config,
@@ -13,11 +20,11 @@ const app = await buildApp({
 });
 
 app.log.info(redactedConfig(config), 'конфигурация');
-if (config.nodeEnv === 'production') {
+if (config.nodeEnv === 'production' && config.allowStubInProduction) {
+  app.log.warn('ALLOW_STUB_IN_PRODUCTION=1: заглушки и http разрешены явно, это не боевой режим');
   if (config.payment.provider === 'stub')
     app.log.warn('PAYMENT_PROVIDER=stub: боевая оплата не подключена');
   if (config.sms.provider === 'stub') app.log.warn('SMS_PROVIDER=stub: SMS не уходят клиентам');
-  if (!config.sessionSecret) app.log.warn('SESSION_SECRET не задан');
 }
 
 app.deps.system.scheduler.start();

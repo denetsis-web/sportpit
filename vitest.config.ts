@@ -5,5 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     projects: ['packages/shared', 'apps/server', 'apps/web'],
+    // Три проекта делят процессор: вдвое меньше воркеров — тесты jsdom не упираются в таймауты от нехватки ядер
+    maxWorkers: '50%',
   },
 });

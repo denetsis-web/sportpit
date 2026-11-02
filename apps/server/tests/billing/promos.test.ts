@@ -268,6 +268,62 @@ describe('промокоды в админке', () => {
     });
   });
 
+  it('PATCH не обходит потолок бесплатных кредитов', async () => {
+    const test = await makeBillingApp();
+    const promo = await createPromo(test, {
+      code: 'GIFT',
+      kind: 'free_credits',
+      value: 1,
+      maxUses: 5,
+    });
+    const over = await call(test, 'PATCH', `/admin/promos/${promo.id}`, test.admin, { value: 101 });
+    expect(over.statusCode).toBe(400);
+    expect(over.json().error.fields.value).toBe('billing.error.promoValue');
+    const edge = await call(test, 'PATCH', `/admin/promos/${promo.id}`, test.admin, { value: 100 });
+    expect(edge.statusCode).toBe(200);
+    expect(edge.json().promo.value).toBe(100);
+  });
+
+  it('бесплатные кредиты без «один раз на клиента» только вместе с лимитом использований', async () => {
+    const test = await makeBillingApp();
+    const post = (body: Record<string, unknown>) =>
+      call(test, 'POST', '/admin/promos', test.admin, body);
+
+    // создание
+    const open = await post({ code: 'OPEN', kind: 'free_credits', value: 1, oncePerUser: false });
+    expect(open.statusCode).toBe(400);
+    expect(open.json().error.fields.oncePerUser).toBe('billing.error.promoUnlimited');
+    const capped = await post({
+      code: 'CAPPED',
+      kind: 'free_credits',
+      value: 1,
+      oncePerUser: false,
+      maxUses: 10,
+    });
+    expect(capped.statusCode).toBe(201);
+
+    // правка: снять лимит у уже «многоразового» нельзя, снять «один раз» без лимита нельзя
+    const safe = await createPromo(test, { code: 'SAFE', kind: 'free_credits', value: 1 });
+    const patchSafe = await call(test, 'PATCH', `/admin/promos/${safe.id}`, test.admin, {
+      oncePerUser: false,
+    });
+    expect(patchSafe.statusCode).toBe(400);
+    expect(patchSafe.json().error.fields.oncePerUser).toBe('billing.error.promoUnlimited');
+    const dropLimit = await call(
+      test,
+      'PATCH',
+      `/admin/promos/${capped.json().promo.id}`,
+      test.admin,
+      { maxUses: null },
+    );
+    expect(dropLimit.statusCode).toBe(400);
+    const both = await call(test, 'PATCH', `/admin/promos/${safe.id}`, test.admin, {
+      oncePerUser: false,
+      maxUses: 3,
+    });
+    expect(both.statusCode).toBe(200);
+  });
+
   it('проверка значений: процент выше 100, неверные даты, формат кода', async () => {
     const test = await makeBillingApp();
     const post = (body: Record<string, unknown>) =>

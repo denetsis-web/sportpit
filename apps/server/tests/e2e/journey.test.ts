@@ -111,6 +111,9 @@ describe('сквозной путь клиента: от входа до отч�
     expect(exported.data.billing.purchases).toEqual([
       expect.objectContaining({ boxes: 12, status: 'paid' }),
     ]);
+    expect(exported.data.notifications.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'rate_dish' })]),
+    );
     // чужого в выгрузке нет
     expect(res.body).not.toContain(j.secondOrderId);
     expect(res.body).not.toContain('+37369777002');
@@ -141,8 +144,17 @@ describe('удаление аккаунта: персональных данны
   });
 
   it('ручные записи трекера, текст жалобы и фото жалобы стёрты (записи и файл)', async () => {
-    const j = await deleted();
-    const key = 'complaints/';
+    const j = await runJourney();
+    const photo = j.test.deps.db.get<{ storage_key: string }>(
+      'SELECT storage_key FROM complaint_photos WHERE complaint_id = ?',
+      [j.complaintId],
+    );
+    // фото было: без этого проверка «файла нет» ничего бы не доказывала
+    expect(photo?.storage_key).toMatch(/^complaints\//);
+    expect(await j.test.deps.storage.get(photo!.storage_key)).toBeDefined();
+    const res = await call(j.test, 'POST', '/profile/account/delete', j.cookie, { confirm: true });
+    expect(res.statusCode).toBe(200);
+    await feedbackFor(j.test.deps).sweepTrash();
     expect(count(j, 'SELECT COUNT(*) AS n FROM tracker_entries WHERE user_id = ?', j.userId)).toBe(
       0,
     );
@@ -158,21 +170,26 @@ describe('удаление аккаунта: персональных данны
     expect(count(j, 'SELECT COUNT(*) AS n FROM feedback_file_trash')).toBe(0);
     expect(dumpDatabase(j)).not.toContain(COMPLAINT_TEXT);
     expect(dumpDatabase(j)).not.toContain(TRACKER_NAME);
-    expect(key).toBeTruthy();
+    expect(await j.test.deps.storage.get(photo!.storage_key)).toBeUndefined();
   });
 
-  // ДЕФЕКТ ЧУЖОГО МОДУЛЯ (подтверждён): ни auth.anonymizeUser, ни модуль notifications не стирают уведомления
-  // удалённого пользователя (строка rate_dish остаётся привязанной к анонимной строке users).
-  // Запись в concerns.md; когда notifications зарегистрирует registerDeletionHook, снять it.fails.
-  it.fails(
-    'уведомления клиента стёрты вместе с аккаунтом (известный дефект notifications)',
-    async () => {
-      const j = await deleted();
-      expect(count(j, 'SELECT COUNT(*) AS n FROM notifications WHERE user_id = ?', j.userId)).toBe(
-        0,
-      );
-    },
-  );
+  it('уведомления клиента стёрты вместе с аккаунтом: до удаления строки есть, после — ноль', async () => {
+    const j = await runJourney();
+    const before = count(j, 'SELECT COUNT(*) AS n FROM notifications WHERE user_id = ?', j.userId);
+    expect(before).toBeGreaterThan(0); // выдача создала «Как блюдо?»
+    const secondBefore = count(
+      j,
+      'SELECT COUNT(*) AS n FROM notifications WHERE user_id = ?',
+      j.secondUserId,
+    );
+    const res = await call(j.test, 'POST', '/profile/account/delete', j.cookie, { confirm: true });
+    expect(res.statusCode).toBe(200);
+    expect(count(j, 'SELECT COUNT(*) AS n FROM notifications WHERE user_id = ?', j.userId)).toBe(0);
+    // уведомления второго клиента не тронуты
+    expect(
+      count(j, 'SELECT COUNT(*) AS n FROM notifications WHERE user_id = ?', j.secondUserId),
+    ).toBe(secondBefore);
+  });
 
   it('чужие данные остаются: заказ и анкета второго клиента на месте', async () => {
     const j = await deleted();

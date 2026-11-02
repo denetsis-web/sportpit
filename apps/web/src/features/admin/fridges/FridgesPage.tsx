@@ -11,7 +11,7 @@ import {
 } from '@sportpit/shared/schemas/admin';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
 import {
   AdminOnly,
   CheckField,
@@ -20,7 +20,6 @@ import {
   numberOrNull,
   SelectField,
   toNumber,
-  useResource,
 } from '../gyms/common.tsx';
 
 interface Draft {

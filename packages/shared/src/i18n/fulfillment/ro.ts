@@ -21,6 +21,8 @@ const ro: DictionaryOf<typeof ru> = {
     'Primirea comenzilor pentru această dată este încă deschisă până la {time}: e prea devreme pentru încărcare, pot apărea comenzi noi.',
   'error.batchesNotCooked':
     'Nu toate preparatele sunt gata: {dishes}. Așteptați ca bucătăria să marcheze loturile ca pregătite.',
+  'error.batchShort':
+    'S-a gătit mai puțin decât s-a comandat: {dishes} (gata/necesar). Anunțați bucătăria înainte de încărcarea frigiderului.',
   'error.dayClosed': 'Ziua pentru acest frigider este deja închisă.',
   'error.notToday': 'Ridicarea este posibilă doar în ziua comenzii.',
   'error.notLoaded':

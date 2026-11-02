@@ -34,7 +34,7 @@ const ro: DictionaryOf<typeof ru> = {
   'order.cart.boxes': 'Boxuri în comandă: {count}',
   'order.cart.line': '{qty} × {name}',
 
-  'order.totals.title': 'Totalul KBJU al comenzii',
+  'order.totals.title': 'Total valori nutriționale ale comenzii',
   'order.totals.kcal': 'Calorii',
   'order.totals.of': '{value} din {target}',
   'order.totals.noTarget': 'Completați chestionarul de obiectiv ca să vedeți norma zilei.',

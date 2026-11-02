@@ -1,10 +1,11 @@
 // Общие части карточки блюда в списке и на странице блюда: КБЖУ, аллергены, рейтинг, время приготовления.
+import { formatDecimal } from '@sportpit/shared/format';
 import type { MenuItemDto, Rating } from '@sportpit/shared/schemas/catalog';
 import { useI18n } from '../../../app/i18n.tsx';
 
 /** Число в формате Молдовы: запятая, не больше одного знака. */
 export function formatNumber(value: number): string {
-  return String(Math.round(value * 10) / 10).replace('.', ',');
+  return formatDecimal(value, 1);
 }
 
 export function RatingLine({ rating }: { rating: Rating }) {

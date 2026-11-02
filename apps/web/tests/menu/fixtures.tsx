@@ -18,7 +18,10 @@ export function renderAt(path: string, lang: 'ru' | 'ro' = 'ru') {
 
 export const TODAY = '2026-03-10';
 export const TOMORROW = '2026-03-11';
-const NOTE = { ru: 'Допуск КБЖУ: ±5% по белку', ro: 'Toleranță KBJU: ±5% la proteine' };
+const NOTE = {
+  ru: 'Допуск КБЖУ: ±5% по белку',
+  ro: 'Toleranță valori nutriționale: ±5% la proteine',
+};
 
 export function item(overrides: Partial<MenuItemDto> = {}): MenuItemDto {
   return {

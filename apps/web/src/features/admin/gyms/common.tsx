@@ -1,5 +1,5 @@
 // Общие части страниц админки «Залы, холодильники, блюда, меню, настройки»: загрузка, ошибки сервера, поля форм.
-import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { ApiError, NetworkError } from '../../../api/index.ts';
 import type { TFunction } from '../../../app/i18n.tsx';
 import { RequireRole } from '../../client/auth/guards.tsx';
@@ -21,38 +21,6 @@ export function errorText(error: unknown, t: TFunction): string {
 export function fieldErrors(error: unknown, t: TFunction): Record<string, string> {
   if (!(error instanceof ApiError) || !error.fields) return {};
   return Object.fromEntries(Object.entries(error.fields).map(([name, key]) => [name, t(key)]));
-}
-
-export interface Resource<T> {
-  data: T | undefined;
-  error: unknown;
-  loading: boolean;
-  reload: () => void;
-}
-
-/** Загружает данные при показе страницы и по требованию. */
-export function useResource<T>(load: () => Promise<T>, deps: readonly unknown[] = []): Resource<T> {
-  const [data, setData] = useState<T | undefined>(undefined);
-  const [error, setError] = useState<unknown>(undefined);
-  const [loading, setLoading] = useState(true);
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    load()
-      .then((value) => {
-        if (!alive) return;
-        setData(value);
-        setError(undefined);
-      })
-      .catch((e: unknown) => alive && setError(e))
-      .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [version, ...deps]);
-  const reload = useCallback(() => setVersion((n) => n + 1), []);
-  return { data, error, loading, reload };
 }
 
 interface FieldProps {

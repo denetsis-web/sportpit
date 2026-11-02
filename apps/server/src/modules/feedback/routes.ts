@@ -6,7 +6,7 @@
 //   Фото:    GET /feedback/complaints/:id/photos/:photoId — владельцу жалобы и администратору (остальным 404).
 //   Админ:   GET /admin/complaints?status=open|all · POST /admin/complaints/:id/resolve {outcome, comment?}.
 import '@fastify/multipart';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   complaintInputSchema,
@@ -17,23 +17,13 @@ import {
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
 import { AppError, errors } from '../system/errors.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { feedbackFor } from './index.ts';
 
-const OWN_KEY = /^feedback\.error\./;
 const ID = /^[A-Za-z0-9-]{1,64}$/;
 
-function parse<S extends z.ZodType>(schema: S, body: unknown): z.infer<S> {
-  const result = schema.safeParse(body ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = issue.path.map(String).join('.') || '_';
-    fields[name] ??= OWN_KEY.test(issue.message) ? issue.message : 'core.error.validation';
-  }
-  throw errors.validation(fields);
-}
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
+const parse = <S extends z.ZodType>(schema: S, body: unknown) =>
+  parseWith(schema, body, 'feedback');
 
 interface ComplaintForm {
   fields: Record<string, string>;

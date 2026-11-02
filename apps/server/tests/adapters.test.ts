@@ -108,6 +108,39 @@ describe('заглушка PaymentGateway', () => {
     expect(repeat.eventId).toBe(first.eventId);
   });
 
+  it('состояние и колбэк несут сумму и валюту платежа', async () => {
+    const gw = new StubPaymentGateway({ outcome: 'pending' });
+    const { providerPaymentId } = await gw.createPayment(request);
+    expect(await gw.getPayment(providerPaymentId)).toMatchObject({
+      amountBani: 11900,
+      currency: 'MDL',
+    });
+    gw.complete(providerPaymentId, 'paid');
+    expect(gw.parseCallback(gw.callbackFor(providerPaymentId))).toMatchObject({
+      amountBani: 11900,
+      currency: 'MDL',
+    });
+  });
+
+  it('колбэк без суммы или валюты, с нецелой или отрицательной суммой отклоняется', async () => {
+    const gw = new StubPaymentGateway({ outcome: 'pending' });
+    const { providerPaymentId } = await gw.createPayment(request);
+    const headers = { 'x-stub-signature': 'stub' };
+    const base = { providerPaymentId, status: 'paid', eventId: 'e1' };
+    for (const body of [
+      base,
+      { ...base, amountBani: 11900 },
+      { ...base, currency: 'MDL' },
+      { ...base, amountBani: 11900, currency: 5 },
+      { ...base, amountBani: -5, currency: 'MDL' },
+      { ...base, amountBani: 1.5, currency: 'MDL' },
+    ]) {
+      expect(() => gw.parseCallback({ body, headers }), JSON.stringify(body)).toThrow(
+        InvalidCallbackError,
+      );
+    }
+  });
+
   it('тот же ключ идемпотентности — тот же платёж, другой — новая попытка', async () => {
     const gw = new StubPaymentGateway({ outcome: 'pending' });
     const a = await gw.createPayment(request);

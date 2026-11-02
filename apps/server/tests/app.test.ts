@@ -80,6 +80,22 @@ describe('каркас сервера', () => {
     expect(evil.statusCode).toBe(404);
   });
 
+  it('публичны только ключи с префиксом dishes/: любой другой префикс — 404 даже при наличии файла', async () => {
+    const app = await make();
+    for (const key of ['exports/data.png', 'misc/a1.png', 'a1.png', 'dishes2/a1.png']) {
+      await app.deps.storage.put(key, new Uint8Array([1, 2, 3]));
+      const res = await app.inject({ method: 'GET', url: `/api/v1/files/${key}` });
+      expect(res.statusCode, key).toBe(404);
+    }
+    await app.deps.storage.put('dishes/ok.png', new Uint8Array([1, 2, 3]));
+    expect(
+      (await app.inject({ method: 'GET', url: '/api/v1/files/dishes/ok.png' })).statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ method: 'GET', url: '/api/v1/files/DISHES/ok.png' })).statusCode,
+    ).toBe(404);
+  });
+
   it('хук одного модуля не действует на маршруты других модулей, а общий хук X-Requested-With действует на всех', async () => {
     const app = await make();
     const own = await app.inject({ method: 'GET', url: '/api/v1/hook-probe/ping' });
@@ -235,6 +251,35 @@ describe('каркас сервера', () => {
     const events = app.deps.system.events.list({ kind: 'backup_done' });
     expect(events).toHaveLength(1);
     expect(String(events[0]!.detail.file)).toMatch(/^sportpit-20260115-010000-000\.db$/);
+  });
+
+  it('долгий кэш только у /assets/* (имена с хэшем); иконки и манифест без хэша — no-cache', async () => {
+    const dist = mkdtempSync(join(tmpdir(), 'sportpit-dist-'));
+    cleanup.push(() => rmSync(dist, { recursive: true, force: true }));
+    mkdirSync(join(dist, 'assets'));
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><title>оболочка</title>');
+    for (const name of [
+      'icon-192.png',
+      'apple-touch-icon.png',
+      'icon.svg',
+      'manifest.webmanifest',
+    ]) {
+      writeFileSync(join(dist, name), 'x');
+    }
+    writeFileSync(join(dist, 'assets', 'app-abc123.js'), 'export {}');
+    const app = await make({ webDistDir: dist, serveWeb: true });
+    for (const url of [
+      '/icon-192.png',
+      '/apple-touch-icon.png',
+      '/icon.svg',
+      '/manifest.webmanifest',
+    ]) {
+      const res = await app.inject({ method: 'GET', url });
+      expect(res.statusCode, url).toBe(200);
+      expect(res.headers['cache-control'], url).toBe('no-cache');
+    }
+    const asset = await app.inject({ method: 'GET', url: '/assets/app-abc123.js' });
+    expect(asset.headers['cache-control']).toBe('public, max-age=31536000, immutable');
   });
 
   it('собранный клиент раздаётся самим сервером: оболочка, ресурсы с долгим кэшем, переходы SPA, API не затронут', async () => {

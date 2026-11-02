@@ -28,10 +28,15 @@ export const ENV_VARIABLES = [
   'SMS_API_KEY',
   'SMS_SENDER_ID',
   'FILE_STORAGE',
+  'ALLOW_STUB_IN_PRODUCTION',
+  'TRUST_PROXY',
 ] as const;
 
 export type EnvName = (typeof ENV_VARIABLES)[number];
 export type Env = Record<string, string | undefined>;
+
+/** Значение `trustProxy` Fastify: доверять ли заголовку X-Forwarded-For (и сколько прокси в цепочке). */
+export type TrustProxy = boolean | number | string;
 
 export type StubPaymentOutcome = 'paid' | 'failed' | 'pending';
 
@@ -55,6 +60,10 @@ export interface Config {
   };
   sms: { provider: string; apiKey: string | undefined; senderId: string | undefined };
   storage: { provider: string };
+  /** `ALLOW_STUB_IN_PRODUCTION=1`: осознанно пустить в production заглушки, http-адрес (демо, стенд). */
+  allowStubInProduction: boolean;
+  /** `TRUST_PROXY`: по умолчанию false — адрес клиента берётся из соединения, а не из заголовков. */
+  trustProxy: TrustProxy;
   backup: { keep: number };
 }
 
@@ -66,6 +75,22 @@ function pick(env: Env, name: EnvName): string | undefined {
 function resolvePath(value: string | undefined, fallback: string): string {
   const path = value ?? fallback;
   return isAbsolute(path) ? path : resolve(REPO_ROOT, path);
+}
+
+function readFlag(env: Env, name: EnvName): boolean {
+  const raw = pick(env, name)?.toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes';
+}
+
+/** `TRUST_PROXY`: `true`/`false`, число прокси в цепочке или адрес/подсеть (список через запятую). */
+function readTrustProxy(env: Env): TrustProxy {
+  const raw = pick(env, 'TRUST_PROXY');
+  if (raw === undefined) return false;
+  const lower = raw.toLowerCase();
+  if (lower === 'false' || lower === '0' || lower === 'no') return false;
+  if (lower === 'true' || lower === 'yes') return true;
+  if (/^\d{1,2}$/.test(raw)) return Number(raw);
+  return raw;
 }
 
 function readInt(env: Env, name: EnvName, fallback: number, min: number, max: number): number {
@@ -107,6 +132,8 @@ export function loadConfig(env: Env = process.env): Config {
       senderId: pick(env, 'SMS_SENDER_ID'),
     },
     storage: { provider: pick(env, 'FILE_STORAGE') ?? 'local' },
+    allowStubInProduction: readFlag(env, 'ALLOW_STUB_IN_PRODUCTION'),
+    trustProxy: readTrustProxy(env),
     backup: { keep: readInt(env, 'BACKUP_KEEP', 14, 1, 365) },
   };
 }
@@ -130,8 +157,47 @@ export function redactedConfig(config: Config) {
       hasApiKey: config.sms.apiKey !== undefined,
     },
     storage: config.storage.provider,
+    allowStubInProduction: config.allowStubInProduction,
+    trustProxy: config.trustProxy,
+    publicBaseUrlHttps: config.publicBaseUrl.startsWith('https://'),
     hasSessionSecret: config.sessionSecret !== undefined,
   };
+}
+
+/**
+ * Чего не хватает для боевого запуска. Вне production — пусто.
+ * SESSION_SECRET обязателен всегда; заглушки оплаты и SMS и адрес не на https:// допустимы только
+ * с явным флагом `ALLOW_STUB_IN_PRODUCTION=1`. Значения секретов в тексты не попадают.
+ */
+export function productionProblems(config: Config): string[] {
+  if (config.nodeEnv !== 'production') return [];
+  const problems: string[] = [];
+  if (!config.sessionSecret) {
+    problems.push('SESSION_SECRET не задан: без него cookie сессии и коды входа не защищены.');
+  }
+  if (!config.allowStubInProduction) {
+    if (config.payment.provider === 'stub') {
+      problems.push('PAYMENT_PROVIDER=stub: оплата идёт через заглушку и не берёт денег.');
+    }
+    if (config.sms.provider === 'stub') {
+      problems.push('SMS_PROVIDER=stub: SMS не уходят клиентам, войти по коду нельзя.');
+    }
+    if (!config.publicBaseUrl.startsWith('https://')) {
+      problems.push('PUBLIC_BASE_URL должен начинаться с https://.');
+    }
+  }
+  return problems;
+}
+
+/** Бросает ошибку со списком причин, если production запускается небезопасно. */
+export function assertProductionConfig(config: Config): void {
+  const problems = productionProblems(config);
+  if (problems.length === 0) return;
+  throw new Error(
+    `Сервер не запущен: небезопасная конфигурация production.\n- ${problems.join('\n- ')}\n` +
+      'Исправьте .env. Для демонстрации или стенда с заглушками задайте ALLOW_STUB_IN_PRODUCTION=1 ' +
+      '(SESSION_SECRET нужен в любом случае).',
+  );
 }
 
 /** Подгружает `.env` из корня репозитория (если файл есть); уже заданные переменные не перезаписывает. */

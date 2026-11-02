@@ -1,10 +1,10 @@
 // Экран «Мои заказы» (R24): предстоящие и прошлые заказы, код получения, отмена до срока, пауза пакета.
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { BalanceResponse } from '@sportpit/shared/schemas/billing';
 import type { OrderDto, OrdersList, PauseDto } from '@sportpit/shared/schemas/orders';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, Dialog } from '../../../ui/index.ts';
+import { Banner, Button, Card, Dialog, useResource } from '../../../ui/index.ts';
 import { describeError } from '../auth/errors.ts';
 import { RequireRole } from '../auth/guards.tsx';
 import { cancelOrder, fetchCredits, fetchOrders, fetchPauses } from './api.ts';
@@ -12,35 +12,26 @@ import { OrderCard } from './OrderCard.tsx';
 import { PauseSection } from './PauseSection.tsx';
 import './my-orders.css';
 
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'error' }
-  | { status: 'ready'; orders: OrdersList; credits: BalanceResponse; pauses: PauseDto[] };
+interface Loaded {
+  orders: OrdersList;
+  credits: BalanceResponse;
+  pauses: PauseDto[];
+}
 
 function MyOrdersContent() {
   const { t } = useI18n();
-  const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const { data, error, reload } = useResource<Loaded>(async () => {
+    const [orders, credits, pauses] = await Promise.all([
+      fetchOrders(),
+      fetchCredits(),
+      fetchPauses(),
+    ]);
+    return { orders, credits, pauses: pauses.items };
+  });
   const [cancelTarget, setCancelTarget] = useState<OrderDto | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const [orders, credits, pauses] = await Promise.all([
-        fetchOrders(),
-        fetchCredits(),
-        fetchPauses(),
-      ]);
-      setState({ status: 'ready', orders, credits, pauses: pauses.items });
-    } catch {
-      setState((prev) => (prev.status === 'ready' ? prev : { status: 'error' }));
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   async function onConfirmCancel() {
     if (!cancelTarget || cancelBusy) return;
@@ -50,23 +41,23 @@ function MyOrdersContent() {
       await cancelOrder(cancelTarget.id);
       setCancelTarget(null);
       setNotice(t('orders.my.cancelled'));
-      await load();
-    } catch (error) {
-      setCancelError(describeError(t, error));
+      reload();
+    } catch (e) {
+      setCancelError(describeError(t, e));
     } finally {
       setCancelBusy(false);
     }
   }
 
-  if (state.status === 'loading') return <p role="status">{t('core.loading')}</p>;
-  if (state.status === 'error') {
+  if (data === undefined && error === undefined) return <p role="status">{t('core.loading')}</p>;
+  if (data === undefined) {
     return (
       <>
         <h1>{t('orders.my.title')}</h1>
         <Banner
           variant="error"
           action={
-            <Button variant="secondary" onClick={() => void load()}>
+            <Button variant="secondary" onClick={reload}>
               {t('core.action.retry')}
             </Button>
           }
@@ -77,7 +68,7 @@ function MyOrdersContent() {
     );
   }
 
-  const { orders, credits, pauses } = state;
+  const { orders, credits, pauses } = data;
   const empty = orders.upcoming.length === 0 && orders.past.length === 0;
 
   return (
@@ -128,13 +119,7 @@ function MyOrdersContent() {
         </>
       )}
 
-      <PauseSection
-        lots={credits.lots}
-        pauses={pauses}
-        onPaused={() => {
-          void load();
-        }}
-      />
+      <PauseSection lots={credits.lots} pauses={pauses} onPaused={reload} />
 
       <Dialog
         open={cancelTarget !== null}

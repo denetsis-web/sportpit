@@ -132,6 +132,22 @@ describe('список уведомлений', () => {
     expect(screen.getByText('Непрочитанных: 4')).toBeTruthy();
   });
 
+  it('решение по жалобе: текст из данных уведомления показан в карточке; без текста — только общая строка', async () => {
+    withMarking([
+      item(2, 'complaint_resolved', {
+        complaintId: 9,
+        text: 'Вернули кредит за повреждённый бокс.',
+      }),
+      item(1, 'complaint_resolved', { complaintId: 8 }),
+    ]);
+    renderAt('/notifications');
+    const cards = await screen.findAllByRole('article');
+    expect(within(cards[0]!).getByText('Вернули кредит за повреждённый бокс.')).toBeTruthy();
+    expect(within(cards[1]!).queryByText(/кредит/)).toBeNull();
+    // текст — только у complaint_resolved: у других типов поле text не показывается
+    expect(screen.getAllByText('По вашему обращению принято решение.')).toHaveLength(2);
+  });
+
   it('тексты на румынском', async () => {
     withMarking([
       item(1, 'rate_dish'),

@@ -1,7 +1,7 @@
 // Маршруты billing: /api/v1/packages, /credits, /promo, /purchases, /admin/{packages,promos,purchases,refunds}
 // и вход колбэков шлюза /api/v1/webhooks/payment (без X-Requested-With: его шлёт банк, не браузер).
 // Данные карты ни в один маршрут не приходят: оплата идёт на странице шлюза.
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   packageCreateSchema,
@@ -17,23 +17,13 @@ import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
 import { profileFor } from '../profile/index.ts';
 import { AppError, errors } from '../system/errors.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { EVENT_KINDS, errorDetail } from '../system/events.ts';
 import { auditFor, setAuditSink } from './audit.ts';
 import { billingFor } from './index.ts';
 import { getPurchaseRow } from './purchases.ts';
 
-const BILLING_KEY = /^billing\.error\./;
-
-function parse<S extends z.ZodType>(schema: S, body: unknown): z.infer<S> {
-  const result = schema.safeParse(body ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = issue.path.map(String).join('.') || '_';
-    fields[name] ??= BILLING_KEY.test(issue.message) ? issue.message : 'core.error.validation';
-  }
-  throw errors.validation(fields);
-}
+const parse = <S extends z.ZodType>(schema: S, body: unknown) => parseWith(schema, body, 'billing');
 
 /** Номер из адреса; не число — как «не найдено». */
 function idParam(req: FastifyRequest, name = 'id'): number {
@@ -42,8 +32,6 @@ function idParam(req: FastifyRequest, name = 'id'): number {
   if (!/^\d{1,12}$/.test(raw) || !Number.isSafeInteger(id) || id <= 0) throw errors.notFound();
   return id;
 }
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
 
 /** Перебор промокодов: после 10 неудач за 15 минут клиент ждёт. Память процесса — одного достаточно. */
 function createPromoGuard(deps: AppDeps) {
@@ -203,6 +191,8 @@ export async function registerRoutes(app: AppInstance, deps: AppDeps): Promise<v
           providerPaymentId: row.provider_payment_id,
           status: outcome,
           eventId: `stub-page:${row.id}:${outcome}`,
+          amountBani: row.total_bani,
+          currency: 'MDL',
           ...(outcome === 'failed' ? { failureReason: 'Отклонено на странице заглушки' } : {}),
         },
       });
@@ -214,6 +204,10 @@ export async function registerRoutes(app: AppInstance, deps: AppDeps): Promise<v
 
   app.post('/webhooks/payment', async (req, reply) => {
     noStore(reply);
+    // подпись заглушки принимает только заглушка: боевой шлюз не должен пропускать «stub»
+    if (deps.payment.provider !== 'stub' && req.headers['x-stub-signature'] !== undefined) {
+      throw errors.notFound();
+    }
     const { duplicate } = billing.handleGatewayCallback({
       body: req.body,
       headers: req.headers,

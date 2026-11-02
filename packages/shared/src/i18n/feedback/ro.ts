@@ -2,7 +2,7 @@ import type { DictionaryOf } from '../../i18n.ts';
 import type ru from './ru.ts';
 
 const ro: DictionaryOf<typeof ru> = {
-  'nav.rate': 'Evaluați preparatele',
+  'nav.rate': 'Evaluează preparatele',
   'nav.support': 'Suport',
   'admin.nav.complaints': 'Reclamații',
 
@@ -41,7 +41,7 @@ const ro: DictionaryOf<typeof ru> = {
   'rate.loadError': 'Nu am putut încărca comenzile.',
   'rate.empty.title': 'Deocamdată nu aveți ce evalua',
   'rate.empty.body': 'Evaluările apar după ce ridicați primul box.',
-  'rate.empty.action': 'Alegeți preparate',
+  'rate.empty.action': 'Alege preparate',
   'rate.order': 'Comanda pentru {date}',
   'rate.where': '{gym} · {fridge}',
   'rate.order.notRated': 'Boxul nu a fost încă ridicat, deocamdată nu îl puteți evalua.',

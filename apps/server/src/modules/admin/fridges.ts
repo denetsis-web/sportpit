@@ -11,6 +11,9 @@ import { AppError, errors } from '../system/errors.ts';
 import { writeAudit } from './audit.ts';
 import { idTaken, newEntityId } from './gyms.ts';
 
+/** Срок приёма заказов, если холодильник не найден (в день D−1). */
+export const DEFAULT_CUTOFF = '18:00';
+
 interface Row {
   id: string;
   gym_id: string;
@@ -136,6 +139,35 @@ export function createFridge(
   });
 }
 
+/**
+ * Срок приёма нельзя двигать под уже зафиксированную сводку кухни: партии рассчитаны по заказам,
+ * принятым до прежнего срока. Считаются сводки на сегодня и позже (выдача по ним ещё не закончена).
+ */
+function assertCutoffNotFrozen(db: Db, clock: Clock, fridgeId: string): void {
+  const frozen = db.get<{ date: string }>(
+    'SELECT date FROM kitchen_closures WHERE fridge_id = ? AND date >= ? ORDER BY date LIMIT 1',
+    [fridgeId, clock.localDate()],
+  );
+  if (frozen) {
+    throw new AppError(409, 'fridge_snapshot_locked', 'admin.error.fridgeSnapshotLocked', {
+      params: { date: frozen.date },
+    });
+  }
+}
+
+/** Холодильник с подтверждёнными или загруженными заказами на сегодня и позже выключить нельзя. */
+function assertNoOpenOrders(db: Db, clock: Clock, fridgeId: string): void {
+  const open = db.get<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM orders WHERE fridge_id = ? AND date >= ? AND status IN ('confirmed', 'loaded')",
+    [fridgeId, clock.localDate()],
+  )!.n;
+  if (open > 0) {
+    throw new AppError(409, 'fridge_has_orders', 'admin.error.fridgeHasOrders', {
+      params: { count: open },
+    });
+  }
+}
+
 export function updateFridge(
   db: Db,
   clock: Clock,
@@ -158,6 +190,8 @@ export function updateFridge(
     };
     assertWindow(next.pickupFrom, next.pickupTo);
     if (next.gymId !== current.gymId) assertGym(tx, next.gymId);
+    if (next.cutoffTime !== current.cutoffTime) assertCutoffNotFrozen(tx, clock, id);
+    if (current.active && !next.active) assertNoOpenOrders(tx, clock, id);
     tx.run(
       `UPDATE fridges SET gym_id = ?, name = ?, capacity_boxes = ?, cutoff_time = ?, pickup_from = ?,
          pickup_to = ?, access_code = ?, active = ?, updated_at = ? WHERE id = ?`,

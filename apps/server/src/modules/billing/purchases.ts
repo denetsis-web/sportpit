@@ -163,15 +163,39 @@ function markFailed(
   return true;
 }
 
-/** Применяет итог от шлюза к покупке. Возвращает, изменилось ли что-то. */
+/** Что шлюз сообщает о платеже: сверяется с нашей покупкой, прежде чем зачислять кредиты. */
+interface GatewayClaim {
+  amountBani: number;
+  currency: string;
+}
+
+/**
+ * Применяет итог от шлюза к покупке. Возвращает, изменилось ли что-то.
+ * «Оплачено» с суммой или валютой, не совпавшими с покупкой, кредитов не даёт: покупка остаётся
+ * как была, в журнал событий пишется `payment_failed` (код `amount_mismatch`) — разбирается вручную.
+ */
 function applyGatewayStatus(
   deps: PurchaseDeps,
   tx: Db,
   purchase: PurchaseRow,
   status: PaymentStatus,
-  failureReason?: string,
+  failureReason: string | undefined,
+  claim: GatewayClaim,
 ): boolean {
-  if (status === 'paid') return markPaid(deps, tx, purchase);
+  if (status === 'paid') {
+    if (claim.amountBani !== purchase.total_bani || claim.currency !== 'MDL') {
+      deps.system.logEvent(EVENT_KINDS.paymentFailed, {
+        purchaseId: purchase.id,
+        code: 'amount_mismatch',
+        expectedBani: purchase.total_bani,
+        receivedBani: claim.amountBani,
+        expectedCurrency: 'MDL',
+        receivedCurrency: claim.currency,
+      });
+      return false;
+    }
+    return markPaid(deps, tx, purchase);
+  }
   if (status === 'failed') {
     return markFailed(deps, tx, purchase, 'declined', failureReason?.slice(0, 300) ?? null);
   }
@@ -327,7 +351,11 @@ async function ensureGatewayPayment(deps: PurchaseDeps, purchaseId: number): Pro
       result.status !== 'pending' &&
       recordEvent(deps, tx, deps.payment.provider, `create:${result.providerPaymentId}`, fresh.id)
     ) {
-      applyGatewayStatus(deps, tx, fresh, result.status, undefined);
+      // сумму платежа мы сами задали в createPayment: сверять нечего
+      applyGatewayStatus(deps, tx, fresh, result.status, undefined, {
+        amountBani: fresh.total_bani,
+        currency: 'MDL',
+      });
     }
   });
 }
@@ -357,7 +385,7 @@ export function handleGatewayCallback(
     if (!row) throw new AppError(404, 'payment_unknown', 'billing.error.paymentUnknown');
     const isNew = recordEvent(deps, tx, deps.payment.provider, callback.eventId, row.id);
     if (isNew) {
-      applyGatewayStatus(deps, tx, row, callback.status, callback.failureReason);
+      applyGatewayStatus(deps, tx, row, callback.status, callback.failureReason, callback);
     }
     return { purchase: toPurchaseDto(deps, getPurchaseRow(tx, row.id)!), duplicate: !isNew };
   });
@@ -385,7 +413,14 @@ export async function refreshPurchase(
       const state = await deps.payment.getPayment(row.provider_payment_id);
       db.tx((tx) => {
         const current = getPurchaseRow(tx, purchaseId)!;
-        const changed = applyGatewayStatus(deps, tx, current, state.status, state.failureReason);
+        const changed = applyGatewayStatus(
+          deps,
+          tx,
+          current,
+          state.status,
+          state.failureReason,
+          state,
+        );
         if (!changed && current.status === 'pending') {
           tx.run('UPDATE purchases SET updated_at = ? WHERE id = ?', [
             clock.now().toISOString(),

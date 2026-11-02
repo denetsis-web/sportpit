@@ -100,8 +100,6 @@ export interface ExportedOrder {
   items: OrderItemRecord[];
 }
 
-const DEFAULT_CUTOFF = '18:00';
-
 export function createOrdersService(deps: AppDeps): OrdersApi {
   const { db, clock } = deps;
   const admin = adminFor(deps);
@@ -119,12 +117,8 @@ export function createOrdersService(deps: AppDeps): OrdersApi {
     return fridge;
   }
 
-  const cutoffTimeOf = (fridgeId: string): string =>
-    admin.getFridge(fridgeId)?.cutoffTime ?? DEFAULT_CUTOFF;
-
   /** Момент, до которого принимаются заказы на день выдачи и можно менять уже принятые. */
-  const cutoffAt = (fridgeId: string, date: string): Date =>
-    clock.cutoffFor(date, cutoffTimeOf(fridgeId));
+  const cutoffAt = admin.cutoffAt;
 
   const closedReason = (userId: number, fridgeId: string, date: string): ClosedReason | null => {
     if (date <= clock.localDate()) return 'date';
@@ -201,7 +195,7 @@ export function createOrdersService(deps: AppDeps): OrdersApi {
     if (input.date <= clock.localDate()) {
       throw new AppError(409, 'date_not_future', 'orders.error.dateNotFuture');
     }
-    if (clock.now() >= clock.cutoffFor(input.date, fridge.cutoffTime)) {
+    if (clock.now() >= cutoffAt(fridge.id, input.date)) {
       throw new AppError(409, 'cutoff_passed', `orders.error.${key}`, {
         params: { time: fridge.cutoffTime },
       });
@@ -295,7 +289,7 @@ export function createOrdersService(deps: AppDeps): OrdersApi {
     const cutoff = cutoffAt(record.fridgeId, record.date);
     if (clock.now() >= cutoff) {
       throw new AppError(409, 'cutoff_passed', 'orders.error.cancelCutoff', {
-        params: { time: cutoffTimeOf(record.fridgeId) },
+        params: { time: admin.cutoffTimeOf(record.fridgeId) },
       });
     }
   };
@@ -362,7 +356,7 @@ export function createOrdersService(deps: AppDeps): OrdersApi {
         capacityBoxes: fridge.capacityBoxes,
         boxesLeft: Math.max(0, fridge.capacityBoxes - boxesOnDate(db, date, { fridgeId })),
         cutoffTime: fridge.cutoffTime,
-        cutoffAt: clock.cutoffFor(date, fridge.cutoffTime).toISOString(),
+        cutoffAt: cutoffAt(fridge.id, date).toISOString(),
         closedReason: closedReason(userId, fridge.id, date),
         maxBoxesPerDay: admin.getSetting('maxBoxesPerDay'),
         userBoxes: boxesOnDate(db, date, { userId }),

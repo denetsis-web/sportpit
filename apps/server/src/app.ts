@@ -123,14 +123,20 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<AppInstan
     level: logLevel,
     redact: ['req.headers.cookie', 'req.headers.authorization', 'req.headers["set-cookie"]'],
   });
-  const app = Fastify({ loggerInstance: logger }) as unknown as AppInstance;
+  const app = Fastify({
+    loggerInstance: logger,
+    // адрес клиента из X-Forwarded-For берётся, только если владелец сказал, что стоит свой прокси (TRUST_PROXY)
+    // (число прокси в цепочке Fastify поддерживает, но не описывает в типах)
+    trustProxy: config.trustProxy as boolean | string,
+  }) as unknown as AppInstance;
 
   const clock = options.clock ?? createSystemClock();
   const db = openDb(options.databasePath ?? ':memory:', {
     ...(options.migrationsDir ? { migrationsDir: options.migrationsDir } : {}),
   });
   const system = createSystem({ db, clock, config, logger });
-  const adapters = createAdapters(config, { silent: config.nodeEnv === 'test' });
+  // заглушка SMS пишет коды в консоль только в разработке: в тестах шум, в production утечка кодов в журнал
+  const adapters = createAdapters(config, { silent: config.nodeEnv !== 'development' });
   const instrumented = instrumentAdapters(
     {
       payment: options.payment ?? adapters.payment,
@@ -266,11 +272,15 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<AppInstan
       root: config.webDistDir,
       cacheControl: false,
       setHeaders(res, path) {
-        const volatile =
-          /(^|[\\/])(sw\.js|index\.html|registerSW\.js|manifest\.webmanifest|workbox-[^\\/]+\.js)$/;
+        // Долгий кэш только у файлов сборки с хэшем в имени (/assets/*). Всё остальное — оболочка,
+        // service worker, манифест, иконки без хэша — перепроверяется при каждом открытии.
+        const relative = path
+          .slice(config.webDistDir.length)
+          .replaceAll('\\', '/')
+          .replace(/^\/+/, '');
         res.header(
           'cache-control',
-          volatile.test(path) ? 'no-cache' : 'public, max-age=31536000, immutable',
+          relative.startsWith('assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
         );
       },
     });

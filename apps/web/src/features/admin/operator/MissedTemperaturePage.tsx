@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { TEMPERATURE_DEADLINES } from '@sportpit/shared/schemas/fulfillment';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Card, TextField } from '../../../ui/index.ts';
-import { AdminOnly, errorText, useResource } from '../gyms/common.tsx';
+import { Banner, Card, TextField, useResource } from '../../../ui/index.ts';
+import { AdminOnly, errorText } from '../gyms/common.tsx';
 import '../gyms/admin-forms.css';
 import { fetchMissed } from './api.ts';
 import './operator.css';

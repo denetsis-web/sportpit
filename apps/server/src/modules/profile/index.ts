@@ -25,8 +25,12 @@ type MaybePromise<T> = T | Promise<T>;
 
 /** Данные одного модуля о пользователе для выгрузки. Только его собственные. */
 export type ExportProvider = (userId: number) => MaybePromise<unknown>;
-/** Стирание персональных данных модуля при удалении аккаунта (внутри общей транзакции). */
-export type DeletionHook = (userId: number, db: Db) => void;
+/**
+ * Стирание персональных данных модуля при удалении аккаунта. Выполняется СИНХРОННО в общей
+ * транзакции: функция, вернувшая промис, не допускается ни типом (`then?: never`), ни во время
+ * выполнения — иначе стирание ушло бы за пределы транзакции и откат его бы не отменил.
+ */
+export type DeletionHook = (userId: number, db: Db) => void | undefined | { then?: never };
 
 export interface ProfileApi {
   /** Сохраняет анкету; без действующего согласия `health_data` — 403 `consent_required`, ничего не пишется. */
@@ -46,6 +50,11 @@ export interface ProfileApi {
   registerExportProvider(name: string, provider: ExportProvider): void;
   registerDeletionHook(name: string, hook: DeletionHook): void;
 }
+
+const isThenable = (value: unknown): boolean =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { then?: unknown }).then === 'function';
 
 const PROVIDER_NAME = /^[a-z][a-z0-9_]{0,39}$/;
 
@@ -112,7 +121,14 @@ export function profileFor(deps: AppDeps): ProfileApi {
     deleteAccount(userId) {
       if (!auth.getUser(userId)) throw errors.notFound('auth.error.userNotFound');
       db.tx((tx) => {
-        for (const hook of deletionHooks.values()) hook(userId, tx);
+        for (const [name, hook] of deletionHooks) {
+          const result: unknown = hook(userId, tx);
+          if (isThenable(result)) {
+            // промис уже запущен — его сбой не должен стать необработанным; аккаунт при этом остаётся целым
+            Promise.resolve(result).catch(() => undefined);
+            throw new Error(`Хук удаления «${name}» вернул промис: хук должен быть синхронным`);
+          }
+        }
         removeProfile(tx, userId);
         auth.anonymizeUser(userId);
       });

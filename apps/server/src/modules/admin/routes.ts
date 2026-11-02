@@ -1,6 +1,7 @@
 // Маршруты admin: /api/v1/admin/* — только администратор; /fridges и /settings/public — любой посетитель.
 // Коды замка и служебные настройки наружу не отдаются.
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
+import type { z } from 'zod';
 import {
   fridgeInputSchema,
   fridgePatchSchema,
@@ -12,15 +13,17 @@ import {
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
 import { errors } from '../system/errors.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { adminFor } from './index.ts';
-import { parseBody } from './validate.ts';
+
+const parseBody = <S extends z.ZodType>(schema: S, body: unknown) =>
+  parseWith(schema, body, ['admin', 'catalog']);
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const admin = adminFor(deps);
   const guard = { preHandler: requireRole('admin') };
   const actor = (req: FastifyRequest): number => currentUser(req)!.id;
   const idOf = (req: FastifyRequest): string => (req.params as { id: string }).id;
-  const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
 
   // ---- залы ----
 

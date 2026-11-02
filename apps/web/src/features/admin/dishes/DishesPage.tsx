@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { formatDecimal } from '@sportpit/shared/format';
 import {
   adminDishListSchema,
   adminDishSchema,
@@ -12,7 +13,7 @@ import {
 } from '@sportpit/shared/schemas/catalog';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
 import {
   AdminOnly,
   CheckField,
@@ -21,7 +22,6 @@ import {
   numberOrNull,
   TextAreaField,
   toNumber,
-  useResource,
 } from '../gyms/common.tsx';
 
 interface Draft {
@@ -64,7 +64,7 @@ const EMPTY: Draft = {
   photoUrl: null,
 };
 
-const text = (n: number) => String(n).replace('.', ',');
+const text = (n: number) => formatDecimal(n);
 
 function toDraft(dish: AdminDishDto): Draft {
   return {

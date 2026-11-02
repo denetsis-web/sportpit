@@ -13,6 +13,7 @@ import {
   type NotificationType,
 } from '@sportpit/shared/schemas/notifications';
 import type { AppDeps } from '../../app.ts';
+import { profileFor } from '../profile/index.ts';
 
 export type { NotificationDto, NotificationList, NotificationPayload, NotificationType };
 
@@ -121,4 +122,23 @@ export function notify(
   payload: NotificationPayload = {},
 ): number {
   return notificationsFor(deps).notify(userId, type, payload);
+}
+
+/**
+ * Уведомления — данные клиента: попадают в его выгрузку и стираются вместе с аккаунтом.
+ * Хук синхронный и идёт в той же транзакции, что удаление (контракт 9 из interfaces.md).
+ */
+export function registerPrivacy(deps: AppDeps): void {
+  const profile = profileFor(deps);
+  profile.registerExportProvider('notifications', (userId) => ({
+    items: deps.db
+      .query<Row>(
+        'SELECT id, type, payload, created_at, read_at FROM notifications WHERE user_id = ? ORDER BY id',
+        [userId],
+      )
+      .map(toDto),
+  }));
+  profile.registerDeletionHook('notifications', (userId, tx) => {
+    tx.run('DELETE FROM notifications WHERE user_id = ?', [userId]);
+  });
 }

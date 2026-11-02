@@ -78,18 +78,50 @@ export function upsertUserWithRole(
   return db.tx((tx) => {
     const existing = findUserByPhone(tx, phone);
     if (!existing) return { user: createUser(tx, clock, { phone, role }), created: true };
+    assertMayLoseAdmin(tx, existing.id, role);
     tx.run('UPDATE users SET role = ? WHERE id = ?', [role, existing.id]);
+    dropOperatorFridgesIfNotOperator(tx, existing.id, role);
     return { user: findUserById(tx, existing.id)!, created: false };
   });
 }
 
+/**
+ * Администратор, которого нельзя лишить роли или удалить, если он последний: иначе в системе
+ * некому выдавать роли и править настройки. Проверка внутри транзакции вызывающего.
+ */
+function assertNotLastAdmin(tx: Db, userId: number): void {
+  const others = tx.get<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM users WHERE role = 'admin' AND deleted_at IS NULL AND id <> ?",
+    [userId],
+  )!.n;
+  if (others === 0) throw new AppError(409, 'last_admin', 'auth.error.lastAdmin');
+}
+
+function assertMayLoseAdmin(tx: Db, userId: number, nextRole: Role): void {
+  if (nextRole === 'admin') return;
+  const current = tx.get<{ role: Role }>(
+    'SELECT role FROM users WHERE id = ? AND deleted_at IS NULL',
+    [userId],
+  );
+  if (current?.role === 'admin') assertNotLastAdmin(tx, userId);
+}
+
+/** Роль operator снимается — привязки к холодильникам уходят в той же транзакции (не воскреснут при новом назначении). */
+function dropOperatorFridgesIfNotOperator(tx: Db, userId: number, role: Role): void {
+  if (role !== 'operator') tx.run('DELETE FROM operator_fridges WHERE user_id = ?', [userId]);
+}
+
 export function setUserRole(db: Db, userId: number, role: Role): AuthUser {
-  const changes = db.run('UPDATE users SET role = ? WHERE id = ? AND deleted_at IS NULL', [
-    role,
-    userId,
-  ]).changes;
-  if (changes === 0) throw new AppError(404, 'user_not_found', 'auth.error.userNotFound');
-  return findUserById(db, userId)!;
+  return db.tx((tx) => {
+    assertMayLoseAdmin(tx, userId, role);
+    const changes = tx.run('UPDATE users SET role = ? WHERE id = ? AND deleted_at IS NULL', [
+      role,
+      userId,
+    ]).changes;
+    if (changes === 0) throw new AppError(404, 'user_not_found', 'auth.error.userNotFound');
+    dropOperatorFridgesIfNotOperator(tx, userId, role);
+    return findUserById(tx, userId)!;
+  });
 }
 
 /** Заменяет список холодильников оператора. Идентификаторы хранятся как строки. */
@@ -163,6 +195,7 @@ export function anonymizeUser(db: Db, clock: Clock, userId: number): void {
       [userId],
     );
     if (!row) throw new AppError(404, 'user_not_found', 'auth.error.userNotFound');
+    assertMayLoseAdmin(tx, userId, 'client');
     if (row.phone) tx.run('DELETE FROM otp_codes WHERE phone = ?', [row.phone]);
     tx.run('DELETE FROM sessions WHERE user_id = ?', [userId]);
     tx.run('DELETE FROM operator_fridges WHERE user_id = ?', [userId]);

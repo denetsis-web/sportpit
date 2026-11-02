@@ -176,6 +176,32 @@ export const promoResponseSchema = z.object({ promo: promoSchema });
 /** Больше бесплатных кредитов одним промокодом не выдаём: защита от опечатки в админке. */
 export const PROMO_MAX_FREE_CREDITS = 100;
 
+/**
+ * Правила значения промокода, общие для создания и правки (на сервере правка проверяется по итоговым
+ * значениям): процент ≤ 100; бесплатных кредитов не больше потолка; бесплатные кредиты без «один раз
+ * на клиента» — только вместе с лимитом использований, иначе кредиты неограничены.
+ */
+export function promoRuleIssues(promo: {
+  kind: PromoKind;
+  value: number;
+  oncePerUser?: boolean | undefined;
+  maxUses?: number | null | undefined;
+}): Array<{ path: 'value' | 'oncePerUser'; message: string }> {
+  const issues: Array<{ path: 'value' | 'oncePerUser'; message: string }> = [];
+  if (promo.kind === 'percent' && promo.value > 100) {
+    issues.push({ path: 'value', message: 'billing.error.promoValue' });
+  }
+  if (promo.kind === 'free_credits') {
+    if (promo.value > PROMO_MAX_FREE_CREDITS) {
+      issues.push({ path: 'value', message: 'billing.error.promoValue' });
+    }
+    if (promo.oncePerUser === false && (promo.maxUses === null || promo.maxUses === undefined)) {
+      issues.push({ path: 'oncePerUser', message: 'billing.error.promoUnlimited' });
+    }
+  }
+  return issues;
+}
+
 export const promoCreateSchema = z
   .object({
     code: z
@@ -195,11 +221,8 @@ export const promoCreateSchema = z
     active: z.boolean().optional(),
   })
   .superRefine((promo, ctx) => {
-    if (promo.kind === 'percent' && promo.value > 100) {
-      ctx.addIssue({ code: 'custom', path: ['value'], message: 'billing.error.promoValue' });
-    }
-    if (promo.kind === 'free_credits' && promo.value > PROMO_MAX_FREE_CREDITS) {
-      ctx.addIssue({ code: 'custom', path: ['value'], message: 'billing.error.promoValue' });
+    for (const issue of promoRuleIssues(promo)) {
+      ctx.addIssue({ code: 'custom', path: [issue.path], message: issue.message });
     }
     if (promo.validFrom && promo.validUntil && promo.validFrom > promo.validUntil) {
       ctx.addIssue({ code: 'custom', path: ['validUntil'], message: 'billing.error.promoDates' });

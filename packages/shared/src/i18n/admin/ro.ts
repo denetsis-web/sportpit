@@ -106,7 +106,7 @@ const ro: DictionaryOf<typeof ru> = {
   'settings.stockBuffer.hint': 'Se adaugă la producție. 0 — fără rezervă.',
   'settings.labelSize': 'Dimensiunea etichetei, mm',
   'settings.labelSize.hint': 'Lățime×înălțime, de exemplu 70x50.',
-  'settings.tolerance': 'Toleranța KBJU',
+  'settings.tolerance': 'Toleranța valorilor nutriționale',
   'settings.toleranceRu': 'Textul toleranței (rusă)',
   'settings.toleranceRo': 'Textul toleranței (română)',
   'settings.support': 'Contacte suport',
@@ -140,6 +140,10 @@ const ro: DictionaryOf<typeof ru> = {
   'error.idTaken': 'Acest identificator este deja ocupat.',
   'error.gymNotFound': 'Sala nu a fost găsită.',
   'error.fridgeNotFound': 'Frigiderul nu a fost găsit.',
+  'error.fridgeSnapshotLocked':
+    'Sinteza bucătăriei pentru {date} este deja fixată: termenul de primire a comenzilor acestui frigider nu poate fi schimbat acum, așteptați sfârșitul eliberării.',
+  'error.fridgeHasOrders':
+    'Frigiderul nu poate fi oprit: există comenzi confirmate pentru azi și mai departe ({count}). Mutați-le sau anulați-le mai întâi.',
 };
 
 export default ro;

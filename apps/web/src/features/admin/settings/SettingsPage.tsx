@@ -7,15 +7,8 @@ import {
 } from '@sportpit/shared/schemas/admin';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
-import {
-  AdminOnly,
-  errorText,
-  fieldErrors,
-  numberOrNull,
-  toNumber,
-  useResource,
-} from '../gyms/common.tsx';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
+import { AdminOnly, errorText, fieldErrors, numberOrNull, toNumber } from '../gyms/common.tsx';
 
 interface Form {
   maxBoxesPerDay: string;

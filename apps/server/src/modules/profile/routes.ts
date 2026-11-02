@@ -1,6 +1,5 @@
 // Маршруты профиля: /api/v1/profile/*. Все — только для вошедшего и только про него самого.
 // Данные о здоровье не кэшируются (cache-control: no-store).
-import type { FastifyReply } from 'fastify';
 import {
   deleteAccountSchema,
   phoneChangeConfirmSchema,
@@ -15,15 +14,26 @@ import {
   requireRole,
   SESSION_COOKIE,
 } from '../auth/index.ts';
-import { AppError } from '../system/index.ts';
+import {
+  AppError,
+  createRateLimiter,
+  LOGIN_RATE_MAX,
+  LOGIN_RATE_WINDOW_MS,
+  noStore,
+} from '../system/index.ts';
 import { profileFor } from './index.ts';
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const profile = profileFor(deps);
   const auth = authFor(deps);
   const guard = { preHandler: requireRole() };
-  const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
   const me = (req: Parameters<typeof currentUser>[0]) => currentUser(req)!;
+  // запросы кода на новые номера: по пользователю, чтобы вошедший не рассылал SMS на чужие номера
+  const phoneLimiter = createRateLimiter({
+    clock: deps.clock,
+    max: LOGIN_RATE_MAX,
+    windowMs: LOGIN_RATE_WINDOW_MS,
+  });
 
   app.get('/profile', guard, async (req, reply) => {
     noStore(reply);
@@ -51,6 +61,7 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   app.post('/profile/phone/request', guard, async (req, reply) => {
     noStore(reply);
     const user = me(req);
+    phoneLimiter.hit(String(user.id));
     const { phone } = phoneChangeRequestSchema.parse(req.body ?? {});
     if (phone === user.phone) throw new AppError(400, 'phone_same', 'profile.error.phoneSame');
     // Занят ли номер, здесь не проверяется и не сообщается: иначе любой вошедший перебирал бы чужие

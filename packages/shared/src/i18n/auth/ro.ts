@@ -37,6 +37,8 @@ const ro: DictionaryOf<typeof ru> = {
   'error.consentRequired': 'Este nevoie de acordul dvs. Bifați-l și repetați.',
   'error.consentVersion': 'Textul acordului s-a schimbat. Deschideți-l din nou și confirmați.',
   'error.userNotFound': 'Utilizatorul nu a fost găsit.',
+  'error.lastAdmin':
+    'Acesta este ultimul administrator: numiți mai întâi alt administrator, apoi retrageți rolul sau ștergeți contul.',
   'error.ownRole': 'Nu vă puteți schimba propriul rol: rugați alt administrator.',
   'error.phoneTaken': 'Acest număr aparține deja altui cont.',
 

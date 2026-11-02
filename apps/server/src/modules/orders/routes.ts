@@ -5,7 +5,7 @@
 //   POST /orders/:id/cancel · /orders/:id/move — отмена и перенос до срока;
 //   GET|POST /pauses                          — пауза пакета (R27.1).
 // Заодно модуль подключает к профилю выгрузку данных «orders» и хук удаления аккаунта «orders».
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   availabilityQuerySchema,
@@ -16,24 +16,13 @@ import {
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
 import { profileFor } from '../profile/index.ts';
-import { AppError, errors, pickLang } from '../system/index.ts';
+import { AppError, pickLang } from '../system/index.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { ordersFor } from './index.ts';
 
-const OWN_KEY = /^orders\.error\./;
 const ORDER_ID = /^[A-Za-z0-9-]{1,64}$/;
 
-function parse<S extends z.ZodType>(schema: S, body: unknown): z.infer<S> {
-  const result = schema.safeParse(body ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = issue.path.map(String).join('.') || '_';
-    fields[name] ??= OWN_KEY.test(issue.message) ? issue.message : 'core.error.validation';
-  }
-  throw errors.validation(fields);
-}
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
+const parse = <S extends z.ZodType>(schema: S, body: unknown) => parseWith(schema, body, 'orders');
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const orders = ordersFor(deps);

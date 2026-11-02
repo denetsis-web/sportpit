@@ -55,6 +55,25 @@ describe('словари: пространства имён ru и ro', () => {
     }
   });
 
+  it('в румынском нет транслитерации «KBJU»/«KBZhU»: единый термин «valori nutriționale» / «calorii și macro»', () => {
+    for (const [ns, dict] of Object.entries(ro)) {
+      for (const [key, value] of Object.entries(dict)) {
+        expect(value, `${ns}.${key}`).not.toMatch(/KBJU|KBZH?U/i);
+      }
+    }
+  });
+
+  it('кнопки и действия в румынском — одной формой обращения (повелительное на «tu»), без «Alegeți»/«Salvați»', () => {
+    const action =
+      /(^|.)(action|button|save|submit|add|confirm|cancel|retry|remove|open|close)(.|$)/;
+    const politePlural = /^[p{L}-]+(ați|eți|iți|âți)(s|$)/u;
+    for (const [ns, dict] of Object.entries(ro)) {
+      for (const [key, value] of Object.entries(dict)) {
+        if (action.test(key)) expect(value, `${ns}.${key}`).not.toMatch(politePlural);
+      }
+    }
+  });
+
   it('слоган заведён в core на обоих языках', () => {
     registerDictionaries(allModules);
     expect(t('ru', 'core.slogan')).toBe('Вкусно. Свежо. Чётко по КБЖУ');

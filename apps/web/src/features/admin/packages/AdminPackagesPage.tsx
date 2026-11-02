@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
   packageResponseSchema,
   packagesResponseSchema,
@@ -6,7 +6,7 @@ import {
 } from '@sportpit/shared/schemas/billing';
 import { api, ApiError } from '../../../api/index.ts';
 import { useI18n, type TFunction } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
 import { describeError } from '../../client/auth/errors.ts';
 import { RequireRole } from '../../client/auth/guards.tsx';
 import { formatLeiInput, parseLei } from './lei.ts';
@@ -127,21 +127,14 @@ function PackageForm({
 
 function AdminPackages() {
   const { t } = useI18n();
-  const [items, setItems] = useState<PackageDto[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      setItems((await api.get('/admin/packages', { schema: packagesResponseSchema })).items);
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const {
+    data: items,
+    error,
+    reload,
+  } = useResource<PackageDto[]>(
+    async () => (await api.get('/admin/packages', { schema: packagesResponseSchema })).items,
+  );
+  const failed = error !== undefined;
 
   return (
     <>
@@ -151,7 +144,7 @@ function AdminPackages() {
         <Banner
           variant="error"
           action={
-            <Button variant="secondary" onClick={() => void load()}>
+            <Button variant="secondary" onClick={reload}>
               {t('core.action.retry')}
             </Button>
           }
@@ -159,7 +152,7 @@ function AdminPackages() {
           {t('billing.admin.loadError')}
         </Banner>
       ) : null}
-      {items === null && !failed ? <p role="status">{t('core.loading')}</p> : null}
+      {items === undefined && !failed ? <p role="status">{t('core.loading')}</p> : null}
       {items?.map((pack) => (
         <PackageForm
           key={pack.id}
@@ -172,7 +165,7 @@ function AdminPackages() {
               body,
               schema: packageResponseSchema,
             });
-            await load();
+            reload();
           }}
         />
       ))}
@@ -184,7 +177,7 @@ function AdminPackages() {
         initial={{ boxes: '', price: '', sortOrder: '100', active: true }}
         onSubmit={async (body) => {
           await api.post('/admin/packages', { body, schema: packageResponseSchema });
-          await load();
+          reload();
         }}
       />
     </>

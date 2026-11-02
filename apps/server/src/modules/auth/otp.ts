@@ -53,15 +53,19 @@ export function createOtpService({ db, clock, sms, secret }: OtpDeps): OtpServic
   /** Сколько секунд ждать до следующего запроса (0 — можно). Вызывается внутри транзакции. */
   function waitSeconds(tx: Db, phone: string, now: Date): number {
     const hourAgo = new Date(now.getTime() - HOUR_MS).toISOString();
-    const recent = tx
-      .query<{ created_at: string }>(
-        'SELECT created_at FROM otp_codes WHERE phone = ? AND created_at > ? ORDER BY created_at DESC',
-        [phone, hourAgo],
-      )
-      .map((r) => new Date(r.created_at).getTime());
+    const rows = tx.query<{ created_at: string; send_failed: number }>(
+      'SELECT created_at, send_failed FROM otp_codes WHERE phone = ? AND created_at > ? ORDER BY created_at DESC',
+      [phone, hourAgo],
+    );
+    // квоту «в час» занимают и неудавшиеся отправки; «раз в минуту» считается только по ушедшим кодам
+    const recent = rows.map((r) => new Date(r.created_at).getTime());
+    const lastSent = rows.find((r) => r.send_failed === 0);
     let waitMs = 0;
-    if (recent.length > 0) {
-      waitMs = Math.max(waitMs, recent[0]! + OTP_RESEND_SECONDS * 1000 - now.getTime());
+    if (lastSent) {
+      waitMs = Math.max(
+        waitMs,
+        new Date(lastSent.created_at).getTime() + OTP_RESEND_SECONDS * 1000 - now.getTime(),
+      );
     }
     if (recent.length >= OTP_MAX_PER_HOUR) {
       // окно освободится, когда самый старый из последних пяти запросов выйдет за час
@@ -94,9 +98,10 @@ export function createOtpService({ db, clock, sms, secret }: OtpDeps): OtpServic
       try {
         await sms.send({ to: phone, text: t(lang, 'auth.sms.text', { code }) });
       } catch {
-        // Сбой уже записан в журнал событий обёрткой адаптера (sms_failed). Код не ушёл,
-        // поэтому строку убираем: повторная попытка не упирается в лимит «раз в минуту».
-        db.run('DELETE FROM otp_codes WHERE id = ?', [rowId]);
+        // Сбой уже записан в журнал событий обёрткой адаптера (sms_failed). Код не ушёл: строка остаётся
+        // только как расход квоты «в час» (иначе сбойный провайдер позволил бы слать без счёта),
+        // но повторить можно сразу и проверяться по ней нельзя.
+        db.run('UPDATE otp_codes SET send_failed = 1 WHERE id = ?', [rowId]);
         throw new AppError(502, 'sms_failed', 'auth.error.smsFailed');
       }
       return { retryAfterSeconds: OTP_RESEND_SECONDS, expiresInSeconds: OTP_TTL_SECONDS };
@@ -106,7 +111,7 @@ export function createOtpService({ db, clock, sms, secret }: OtpDeps): OtpServic
       const failure = db.tx((tx): AppError | undefined => {
         const now = clock.now().toISOString();
         const row = tx.get<OtpRow>(
-          'SELECT id, code_hash, created_at, expires_at, attempts, consumed_at FROM otp_codes WHERE phone = ? ORDER BY id DESC LIMIT 1',
+          'SELECT id, code_hash, created_at, expires_at, attempts, consumed_at FROM otp_codes WHERE phone = ? AND send_failed = 0 ORDER BY id DESC LIMIT 1',
           [phone],
         );
         if (!row || row.consumed_at !== null || row.expires_at <= now) {

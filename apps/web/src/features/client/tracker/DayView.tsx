@@ -1,6 +1,7 @@
 // Прогресс дня (R28): калории и БЖУ с клетчаткой против нормы из анкеты, выданные боксы и ручные записи.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { formatDecimal } from '@sportpit/shared/format';
 import {
   NUTRITION_KEYS,
   type Nutrition,
@@ -14,7 +15,7 @@ import { removeEntry } from './api.ts';
 import { EntryForm } from './EntryForm.tsx';
 
 /** Число для показа: до одного знака, десятичная запятая. */
-export const num = (value: number): string => String(Math.round(value * 10) / 10).replace('.', ',');
+export const num = (value: number): string => formatDecimal(value, 1);
 
 export function TargetNotice({ target, blocked }: { target: Nutrition | null; blocked: boolean }) {
   const { t } = useI18n();

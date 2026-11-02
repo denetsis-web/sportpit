@@ -11,7 +11,9 @@ export * from './config.ts';
 export * from './discovery.ts';
 export * from './errors.ts';
 export * from './events.ts';
+export * from './http.ts';
 export * from './i18n.ts';
+export * from './ratelimit.ts';
 export * from './scheduler.ts';
 
 /** То, что модули получают в `deps.system`. */

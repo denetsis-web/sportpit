@@ -1,5 +1,5 @@
 // Админка: очередь жалоб (R38, R44.1). Три исхода: замена другим блюдом, возврат кредита, отказ с комментарием.
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   adminComplaintResponseSchema,
   adminComplaintsSchema,
@@ -9,7 +9,7 @@ import {
 } from '@sportpit/shared/schemas/feedback';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, Dialog } from '../../../ui/index.ts';
+import { Banner, Button, Card, Dialog, useResource } from '../../../ui/index.ts';
 import { describeError } from '../../client/auth/errors.ts';
 import { RequireRole } from '../../client/auth/guards.tsx';
 import '../../client/support/support.css';
@@ -103,8 +103,16 @@ function ComplaintItem({
 function AdminComplaintsContent() {
   const { t } = useI18n();
   const [filter, setFilter] = useState<Filter>('open');
-  const [data, setData] = useState<AdminComplaintsDto | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const {
+    data,
+    error: loadError,
+    reload,
+  } = useResource<AdminComplaintsDto>(
+    () =>
+      api.get('/admin/complaints', { query: { status: filter }, schema: adminComplaintsSchema }),
+    [filter],
+  );
+  const loadFailed = loadError !== undefined;
   const [target, setTarget] = useState<{
     complaint: AdminComplaintDto;
     outcome: ComplaintOutcome;
@@ -113,24 +121,6 @@ function AdminComplaintsContent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      setData(
-        await api.get('/admin/complaints', {
-          query: { status: filter },
-          schema: adminComplaintsSchema,
-        }),
-      );
-      setLoadFailed(false);
-    } catch {
-      setLoadFailed(true);
-    }
-  }, [filter]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   async function confirm() {
     if (!target || busy) return;
@@ -144,7 +134,7 @@ function AdminComplaintsContent() {
       setTarget(null);
       setComment('');
       setNotice(true);
-      await load();
+      reload();
     } catch (e) {
       setError(describeError(t, e));
     } finally {
@@ -161,7 +151,7 @@ function AdminComplaintsContent() {
         <Banner
           variant="error"
           action={
-            <Button variant="secondary" onClick={() => void load()}>
+            <Button variant="secondary" onClick={reload}>
               {t('core.action.retry')}
             </Button>
           }

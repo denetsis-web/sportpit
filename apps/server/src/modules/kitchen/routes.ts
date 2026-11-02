@@ -3,15 +3,13 @@
 //   POST /kitchen/batches/:id/confirm      — подтвердить производство партии;
 //   POST /kitchen/batches/:id/cooked       — отметить партию приготовленной;
 //   GET  /kitchen/batches/:id/label        — данные этикетки приготовленной партии.
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import { summaryQuerySchema } from '@sportpit/shared/schemas/kitchen';
 import { addDaysISO } from '@sportpit/shared/time';
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
-import { AppError, errors } from '../system/index.ts';
+import { AppError, errors, noStore } from '../system/index.ts';
 import { kitchenFor } from './index.ts';
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const kitchen = kitchenFor(deps);

@@ -121,4 +121,23 @@ describe('удаление аккаунта (R29)', () => {
     expect(failed.statusCode).toBe(500);
     expect(userRow(test2, userId(test2.app, PHONE)).deleted_at).toBeNull();
   });
+
+  it('хук удаления, вернувший промис, — ошибка: аккаунт остаётся целым, а тип такой хук не пропускает', async () => {
+    const test = await makeApp();
+    const cookie = await clientWithConsent(test, PHONE);
+    const id = userId(test.app, PHONE);
+    const profile = profileFor(test.app.deps);
+
+    // @ts-expect-error — тип DeletionHook не допускает функцию, возвращающую промис
+    profile.registerDeletionHook('async_diary', async () => undefined);
+    // а синхронный хук (в том числе с выражением-телом, возвращающим не промис) проходит проверку типов
+    profile.registerDeletionHook('sync_diary', (uid, tx) => {
+      tx.run('DELETE FROM sessions WHERE user_id = ? AND 1 = 0', [uid]);
+    });
+
+    const failed = await api(test, 'POST', '/profile/account/delete', cookie, { confirm: true });
+    expect(failed.statusCode).toBe(500);
+    expect(userRow(test, id)).toMatchObject({ phone: PHONE, deleted_at: null });
+    expect((await api(test, 'GET', '/auth/me', cookie)).statusCode).toBe(200);
+  });
 });

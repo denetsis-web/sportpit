@@ -1,5 +1,5 @@
 // Маршруты входа: /api/v1/auth/*. Код входа в ответах не возвращается ни в каком режиме.
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   consentChangesSchema,
@@ -10,7 +10,17 @@ import {
   setRoleSchema,
 } from '@sportpit/shared/schemas/auth';
 import type { AppDeps, AppInstance } from '../../app.ts';
-import { AppError, errors, pickLang } from '../system/index.ts';
+import { audit } from '../admin/index.ts';
+import {
+  AppError,
+  createRateLimiter,
+  errors,
+  LOGIN_RATE_MAX,
+  LOGIN_RATE_WINDOW_MS,
+  noStore,
+  parseWith,
+  pickLang,
+} from '../system/index.ts';
 import { authFor, currentUser, requireRole, SESSION_COOKIE, SESSION_TTL_SECONDS } from './index.ts';
 
 /** Ошибки полей входа — с понятным текстом, а не общим «проверьте данные». */
@@ -19,17 +29,8 @@ const FIELD_MESSAGES: Record<string, string> = {
   code: 'auth.error.codeFormat',
 };
 
-function parse<S extends z.ZodType>(schema: S, body: unknown): z.infer<S> {
-  const result = schema.safeParse(body ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = String(issue.path[0] ?? '_');
-    fields[name] = FIELD_MESSAGES[name] ?? 'core.error.validation';
-  }
-  const first = Object.values(fields)[0] ?? 'core.error.validation';
-  throw new AppError(400, 'validation_failed', first, { fields });
-}
+const parse = <S extends z.ZodType>(schema: S, body: unknown) =>
+  parseWith(schema, body, 'auth', { fieldMessages: FIELD_MESSAGES });
 
 const langOf = (req: FastifyRequest) =>
   pickLang(req.headers['accept-language'], (req.query as { lang?: unknown } | undefined)?.lang);
@@ -46,10 +47,15 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   };
   const tokenOf = (req: FastifyRequest) =>
     (req.cookies as Record<string, string | undefined>)[SESSION_COOKIE];
-  const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
+  // Лимиты по адресу клиента: перебор номеров и кодов с одной машины. Адрес берётся из соединения;
+  // за своим прокси задайте TRUST_PROXY, иначе все клиенты будут выглядеть как адрес прокси.
+  const limit = { clock: deps.clock, max: LOGIN_RATE_MAX, windowMs: LOGIN_RATE_WINDOW_MS };
+  const requestLimiter = createRateLimiter(limit);
+  const verifyLimiter = createRateLimiter(limit);
 
   app.post('/auth/otp/request', async (req, reply) => {
     noStore(reply);
+    requestLimiter.hit(req.ip);
     const { phone } = parse(otpRequestSchema, req.body);
     const sent = await auth.requestOtp(phone, langOf(req));
     return { ok: true as const, ...sent };
@@ -57,6 +63,7 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
 
   app.post('/auth/otp/verify', async (req, reply) => {
     noStore(reply);
+    verifyLimiter.hit(req.ip);
     const { phone, code, lang } = parse(otpVerifySchema, req.body);
     const { user, token } = auth.verifyOtp(phone, code, lang);
     reply.setCookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_TTL_SECONDS });
@@ -117,11 +124,22 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
     if (id === currentUser(req)!.id) {
       throw new AppError(400, 'own_role', 'auth.error.ownRole');
     }
-    return { user: auth.setRole(id, role) };
+    const before = auth.getUser(id);
+    const user = auth.setRole(id, role);
+    audit(deps, currentUser(req)!.id, 'user.role', `user:${id}`, {
+      from: before?.role ?? null,
+      to: user.role,
+    });
+    return { user };
   });
 
   app.put('/auth/users/:id/fridges', adminOnly, async (req) => {
     const { fridgeIds } = parse(setFridgesSchema, req.body);
-    return { user: auth.setOperatorFridges(idOf(req), fridgeIds) };
+    const id = idOf(req);
+    const user = auth.setOperatorFridges(id, fridgeIds);
+    audit(deps, currentUser(req)!.id, 'user.fridges', `user:${id}`, {
+      fridgeIds: [...new Set(fridgeIds.map(String))],
+    });
+    return { user };
   });
 }

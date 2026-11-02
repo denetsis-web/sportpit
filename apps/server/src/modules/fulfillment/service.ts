@@ -194,7 +194,7 @@ export function createFulfillmentService(deps: AppDeps): FulfillmentApi {
       fridge: fridgeDto(fridge),
       date,
       today: clock.localDate(),
-      cutoffPassed: clock.now() >= clock.cutoffFor(date, fridge.cutoffTime),
+      cutoffPassed: clock.now() >= admin.cutoffAt(fridge.id, date),
       loaded: load !== undefined,
       loadedAt: load?.loaded_at ?? null,
       items,
@@ -227,7 +227,7 @@ export function createFulfillmentService(deps: AppDeps): FulfillmentApi {
     if (closureRow(fridgeId, date)) {
       throw new AppError(409, 'day_closed', 'fulfillment.error.dayClosed');
     }
-    if (clock.now() < clock.cutoffFor(date, fridge.cutoffTime)) {
+    if (clock.now() < admin.cutoffAt(fridge.id, date)) {
       throw new AppError(409, 'cutoff_not_passed', 'fulfillment.error.cutoffNotPassed', {
         params: { time: fridge.cutoffTime },
       });
@@ -249,6 +249,28 @@ export function createFulfillmentService(deps: AppDeps): FulfillmentApi {
         if (missing.size > 0) {
           throw new AppError(409, 'batches_not_cooked', 'fulfillment.error.batchesNotCooked', {
             params: { dishes: names(waiting, missing, lang).join(', ') },
+          });
+        }
+      }
+      // Готовых порций партии должно хватать на подтверждённые заказы всех холодильников на дату
+      // (партия одна на блюдо и дату): иначе кому-то из клиентов бокса не достанется.
+      if (waiting.length > 0) {
+        const needed = new Map<number, number>();
+        for (const row of orders.confirmedItemsByDate(date)) {
+          needed.set(row.dishId, (needed.get(row.dishId) ?? 0) + row.qty);
+        }
+        const short = new Set<number>();
+        const lines: string[] = [];
+        for (const batch of kitchen.batchesFor(fridgeId, date)) {
+          const need = needed.get(batch.dishId) ?? 0;
+          if (batch.status === 'cooked' && batch.totalQty < need && !short.has(batch.dishId)) {
+            short.add(batch.dishId);
+            lines.push(`${names(waiting, [batch.dishId], lang)[0]!} (${batch.totalQty}/${need})`);
+          }
+        }
+        if (short.size > 0) {
+          throw new AppError(409, 'batch_short', 'fulfillment.error.batchShort', {
+            params: { dishes: lines.join(', ') },
           });
         }
       }

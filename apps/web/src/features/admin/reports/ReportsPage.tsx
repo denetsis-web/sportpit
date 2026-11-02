@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { REPORT_KINDS, type ReportKind } from '@sportpit/shared/schemas/reports';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, TextField } from '../../../ui/index.ts';
-import { AdminOnly, errorText, useResource } from '../gyms/common.tsx';
+import { Banner, Button, TextField, useResource } from '../../../ui/index.ts';
+import { AdminOnly, errorText } from '../gyms/common.tsx';
 import '../gyms/admin-forms.css';
 import {
   csvUrl,

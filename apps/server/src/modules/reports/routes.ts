@@ -2,7 +2,7 @@
 //   GET /admin/reports/:kind?from&to&page      — отчёт за период, таблица по 50 строк (kind: sales, waste, ratings, share, retention);
 //   GET /admin/reports/:kind/csv?from&to       — тот же отчёт целиком файлом для Excel (UTF-8 с BOM, «;»);
 //   GET /admin/system/events?kind&page         — события системы: счётчики за 24 часа и журнал.
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
   eventsQuerySchema,
@@ -13,22 +13,10 @@ import {
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { requireRole } from '../auth/index.ts';
 import { errors, pickLang } from '../system/index.ts';
+import { noStore, parseWith } from '../system/http.ts';
 import { reportsFor } from './index.ts';
 
-const OWN_KEY = /^reports\.error\./;
-
-function parse<S extends z.ZodType>(schema: S, query: unknown): z.infer<S> {
-  const result = schema.safeParse(query ?? {});
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const name = issue.path.map(String).join('.') || '_';
-    fields[name] ??= OWN_KEY.test(issue.message) ? issue.message : 'core.error.validation';
-  }
-  throw errors.validation(fields);
-}
-
-const noStore = (reply: FastifyReply) => reply.header('cache-control', 'no-store');
+const parse = <S extends z.ZodType>(schema: S, body: unknown) => parseWith(schema, body, 'reports');
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const reports = reportsFor(deps);

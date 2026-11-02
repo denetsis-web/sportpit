@@ -8,7 +8,7 @@ import type {
   PromoKind,
   PromoUpdate,
 } from '@sportpit/shared/schemas/billing';
-import { LOT_VALIDITY_DAYS } from '@sportpit/shared/schemas/billing';
+import { LOT_VALIDITY_DAYS, promoRuleIssues } from '@sportpit/shared/schemas/billing';
 import { isDateISO } from '@sportpit/shared/time';
 import type { Clock } from '../clock/index.ts';
 import type { Db } from '../db/index.ts';
@@ -208,8 +208,13 @@ export function updatePromo(db: Db, clock: Clock, id: number, patch: PromoUpdate
   const existing = getPromoById(db, id);
   if (!existing) throw errors.notFound('billing.error.promoNotFound');
   const value = patch.value ?? existing.value;
-  if (existing.kind === 'percent' && value > 100) {
-    throw errors.validation({ value: 'billing.error.promoValue' });
+  const maxUses = patch.maxUses === undefined ? existing.max_uses : patch.maxUses;
+  const oncePerUser =
+    patch.oncePerUser === undefined ? existing.once_per_user === 1 : patch.oncePerUser;
+  // те же правила, что при создании, по итоговым значениям: правка не обходит потолки
+  const issues = promoRuleIssues({ kind: existing.kind, value, oncePerUser, maxUses });
+  if (issues.length > 0) {
+    throw errors.validation(Object.fromEntries(issues.map((i) => [i.path, i.message])));
   }
   const validFrom = patch.validFrom === undefined ? existing.valid_from : patch.validFrom;
   const validUntil = patch.validUntil === undefined ? existing.valid_until : patch.validUntil;
@@ -222,8 +227,8 @@ export function updatePromo(db: Db, clock: Clock, id: number, patch: PromoUpdate
       patch.ownerLabel === undefined ? existing.owner_label : patch.ownerLabel,
       validFrom,
       validUntil,
-      patch.maxUses === undefined ? existing.max_uses : patch.maxUses,
-      patch.oncePerUser === undefined ? existing.once_per_user : patch.oncePerUser ? 1 : 0,
+      maxUses,
+      oncePerUser ? 1 : 0,
       patch.active === undefined ? existing.active : patch.active ? 1 : 0,
       clock.now().toISOString(),
       id,

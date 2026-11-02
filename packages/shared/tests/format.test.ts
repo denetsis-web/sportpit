@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatDateTime, formatMoney, formatTime } from '@sportpit/shared/format';
+import {
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  formatTime,
+  formatDecimal,
+} from '@sportpit/shared/format';
 
 const NBSP = ' ';
 
@@ -57,5 +63,22 @@ describe('formatDate: дд.мм.гггг по Кишинёву', () => {
   it('мусор вместо даты — ошибка', () => {
     expect(() => formatDate('вчера', 'ru')).toThrow(RangeError);
     expect(() => formatDate('2026-02-31', 'ru')).toThrow(RangeError);
+  });
+});
+
+describe('formatDecimal: десятичная запятая (F1.16)', () => {
+  it('целые без изменений, дробные с запятой, без группировки разрядов', () => {
+    expect(formatDecimal(5)).toBe('5');
+    expect(formatDecimal(12.5)).toBe('12,5');
+    expect(formatDecimal(0.25)).toBe('0,25');
+    expect(formatDecimal(-3.5)).toBe('-3,5');
+    expect(formatDecimal(1234.5)).toBe('1234,5');
+  });
+
+  it('с числом знаков округляет и не оставляет хвост: 2,04 → 2; 12,36 → 12,4', () => {
+    expect(formatDecimal(2.04, 1)).toBe('2');
+    expect(formatDecimal(12.36, 1)).toBe('12,4');
+    expect(formatDecimal(7, 1)).toBe('7');
+    expect(formatDecimal(0.126, 2)).toBe('0,13');
   });
 });

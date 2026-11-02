@@ -1,4 +1,4 @@
-import { act, configure, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -18,8 +18,6 @@ import {
 } from './fixtures.tsx';
 
 // при полном прогоне на нагруженной машине 1 секунды ожидания экрана мало
-vi.setConfig({ testTimeout: 20_000 });
-configure({ asyncUtilTimeout: 8000 });
 
 afterEach(() => {
   cleanUp();

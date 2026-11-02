@@ -18,6 +18,18 @@ export function formatMoney(bani: number, lang: Lang): string {
   return `${negative ? '-' : ''}${number}${NBSP}${unit}`;
 }
 
+/**
+ * Число с десятичной запятой («12,5»), как принято в Молдове; разряды не группируются.
+ * `maxFractionDigits` округляет до нужного числа знаков и не оставляет хвост нулей: 2,04 → «2», 12,36 → «12,4» (1 знак).
+ */
+export function formatDecimal(value: number, maxFractionDigits?: number): string {
+  const rounded =
+    maxFractionDigits === undefined
+      ? value
+      : Math.round(value * 10 ** maxFractionDigits) / 10 ** maxFractionDigits;
+  return String(rounded).replace('.', ',');
+}
+
 function toLocal(iso: string): { dateOnly?: string; parts?: ReturnType<typeof localParts> } {
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
     if (!isDateISO(iso)) throw new RangeError(`Неверная дата: ${iso}`);

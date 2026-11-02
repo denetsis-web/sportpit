@@ -29,12 +29,18 @@ export interface CreatePaymentResult {
 export interface PaymentState {
   providerPaymentId: string;
   status: PaymentStatus;
+  /** Сумма и валюта, которые шлюз фактически провёл: сверяются с покупкой до зачисления. */
+  amountBani: number;
+  currency: string;
   failureReason?: string;
 }
 
 export interface PaymentCallback {
   providerPaymentId: string;
   status: PaymentStatus;
+  /** Сумма и валюта платежа по версии шлюза (целые бани). */
+  amountBani: number;
+  currency: string;
   /** Идентификатор события шлюза: у повторной доставки он тот же. */
   eventId: string;
   failureReason?: string;
@@ -83,6 +89,8 @@ interface StubPayment {
   failureReason?: string;
   request: CreatePaymentRequest;
   eventSeq: number;
+  /** Что «банк» сообщает о сумме и валюте (по умолчанию как в запросе); меняется из теста. */
+  reported: { amountBani: number; currency: string };
 }
 
 const STUB_SIGNATURE_HEADER = 'x-stub-signature';
@@ -134,6 +142,7 @@ export class StubPaymentGateway implements PaymentGateway {
       ...(this.outcome === 'failed' ? { failureReason: 'Отклонено заглушкой' } : {}),
       request,
       eventSeq: 0,
+      reported: { amountBani: request.amountBani, currency: request.currency },
     };
     if (!existing) {
       this.payments.set(payment.providerPaymentId, payment);
@@ -153,6 +162,8 @@ export class StubPaymentGateway implements PaymentGateway {
     return {
       providerPaymentId,
       status: payment.status,
+      amountBani: payment.reported.amountBani,
+      currency: payment.reported.currency,
       ...(payment.failureReason ? { failureReason: payment.failureReason } : {}),
     };
   }
@@ -166,6 +177,12 @@ export class StubPaymentGateway implements PaymentGateway {
     else delete payment.failureReason;
   }
 
+  /** Тест: шлюз сообщает другую сумму или валюту (ошибка шлюза, подмена) — в колбэках и в `getPayment`. */
+  reportAmount(providerPaymentId: string, amountBani: number, currency?: string): void {
+    const payment = this.require(providerPaymentId);
+    payment.reported = { amountBani, currency: currency ?? payment.reported.currency };
+  }
+
   /** Колбэк в том виде, в каком его принимает `parseCallback`; повторный вызов даёт тот же eventId. */
   callbackFor(providerPaymentId: string): CallbackInput {
     const payment = this.require(providerPaymentId);
@@ -174,6 +191,8 @@ export class StubPaymentGateway implements PaymentGateway {
       body: {
         providerPaymentId,
         status: payment.status,
+        amountBani: payment.reported.amountBani,
+        currency: payment.reported.currency,
         eventId: `${providerPaymentId}:${payment.eventSeq}`,
         ...(payment.failureReason ? { failureReason: payment.failureReason } : {}),
       },
@@ -188,6 +207,11 @@ export class StubPaymentGateway implements PaymentGateway {
     if (
       typeof b.providerPaymentId !== 'string' ||
       typeof b.eventId !== 'string' ||
+      typeof b.amountBani !== 'number' ||
+      !Number.isSafeInteger(b.amountBani) ||
+      b.amountBani <= 0 ||
+      typeof b.currency !== 'string' ||
+      b.currency === '' ||
       (status !== 'paid' && status !== 'failed' && status !== 'pending')
     ) {
       throw new InvalidCallbackError();
@@ -196,6 +220,8 @@ export class StubPaymentGateway implements PaymentGateway {
       providerPaymentId: b.providerPaymentId,
       status,
       eventId: b.eventId,
+      amountBani: b.amountBani,
+      currency: b.currency,
       ...(typeof b.failureReason === 'string' ? { failureReason: b.failureReason } : {}),
     };
   }

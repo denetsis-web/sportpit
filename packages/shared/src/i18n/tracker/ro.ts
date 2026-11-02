@@ -71,7 +71,7 @@ const ro: DictionaryOf<typeof ru> = {
   'empty.title': 'Pentru această zi nu există încă nimic',
   'empty.body':
     'Alegeți preparate, comandați boxuri: cele ridicate se adaugă aici singure. Ați mâncat altceva: adăugați o înregistrare manual.',
-  'empty.action': 'Alegeți preparate',
+  'empty.action': 'Alege preparate',
 
   'week.title': 'Săptămâna',
   'week.range': '{from} — {to}',

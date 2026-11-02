@@ -20,6 +20,7 @@ import type { AppDeps } from '../../app.ts';
 import { listAudit, writeAudit } from './audit.ts';
 import {
   createFridge,
+  DEFAULT_CUTOFF,
   getFridge as readFridge,
   getPublicFridge,
   listFridges,
@@ -52,6 +53,13 @@ export interface AdminApi {
   listFridges(options?: { gymId?: string }): FridgeDto[];
   /** Холодильник со всеми параметрами для правил заказа; нет такого — `undefined`. */
   getFridge(id: string): FridgeDto | undefined;
+  /**
+   * Момент, до которого принимаются заказы на день выдачи `date` (срок холодильника в день D−1 по Кишинёву).
+   * Единственное место расчёта: заказы, кухня и выдача спрашивают срок здесь. Нет такого холодильника — срок по умолчанию 18:00.
+   */
+  cutoffAt(fridgeId: string, date: string): Date;
+  /** Время срока приёма заказов холодильника (`HH:MM`); нет такого холодильника — 18:00. */
+  cutoffTimeOf(fridgeId: string): string;
   createFridge(input: FridgeInput, actorId: number | null): FridgeDto;
   updateFridge(id: string, patch: FridgePatch, actorId: number | null): FridgeDto;
   listPublicFridges(): PublicFridgeDto[];
@@ -69,6 +77,8 @@ export function adminFor(deps: AdminDeps): AdminApi {
   const cached = instances.get(deps);
   if (cached) return cached;
   const { db, clock } = deps;
+  const cutoffTimeOf = (fridgeId: string): string =>
+    readFridge(db, fridgeId)?.cutoffTime ?? DEFAULT_CUTOFF;
   const api: AdminApi = {
     audit: (userId, action, target, detail) =>
       writeAudit(db, clock, userId, action, target, detail),
@@ -79,6 +89,8 @@ export function adminFor(deps: AdminDeps): AdminApi {
     updateGym: (id, patch, actorId) => updateGym(db, clock, id, patch, actorId),
     listFridges: (options) => listFridges(db, options),
     getFridge: (id) => readFridge(db, id),
+    cutoffTimeOf,
+    cutoffAt: (fridgeId, date) => clock.cutoffFor(date, cutoffTimeOf(fridgeId)),
     createFridge: (input, actorId) => createFridge(db, clock, input, actorId),
     updateFridge: (id, patch, actorId) => updateFridge(db, clock, id, patch, actorId),
     listPublicFridges: () => listPublicFridges(db),
@@ -109,5 +121,3 @@ export function getFridge(deps: AdminDeps, id: string): FridgeDto | undefined {
 export function getSetting<K extends SettingKey>(deps: AdminDeps, key: K): SettingValues[K] {
   return adminFor(deps).getSetting(key);
 }
-
-export { parseBody } from './validate.ts';

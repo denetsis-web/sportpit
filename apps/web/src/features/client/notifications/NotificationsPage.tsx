@@ -34,6 +34,11 @@ function NotificationCard({ item }: { item: NotificationDto }) {
         {unread ? <span className="notification__new">{t('notifications.unread')}</span> : null}
       </h2>
       <p>{t(`notifications.type.${item.type}.body`, params)}</p>
+      {item.type === 'complaint_resolved' &&
+      typeof item.payload.text === 'string' &&
+      item.payload.text !== '' ? (
+        <p className="notification__text">{item.payload.text}</p>
+      ) : null}
       {item.type === 'credits_expiring' && item.payload.count !== undefined ? (
         <p>{t('notifications.type.credits_expiring.detail', params)}</p>
       ) : null}

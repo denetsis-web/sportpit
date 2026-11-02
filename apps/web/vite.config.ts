@@ -67,5 +67,8 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     // glob-импорты вычисляются при трансформации: кэш скрыл бы новые файлы функций
     fsModuleCache: false,
+    // jsdom-тесты под нагрузкой полного прогона медленнее одиночного: запас на тест и на хуки
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
   },
 });

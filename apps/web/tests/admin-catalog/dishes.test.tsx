@@ -1,14 +1,12 @@
-import { configure, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 import { cleanUp } from '../auth/render.tsx';
 import { renderAt } from '../menu/fixtures.tsx';
 import { admin, fail, installFake } from './fake.ts';
 
 // формы набираются по символам: при полном прогоне на нагруженной машине 5 секунд мало
-vi.setConfig({ testTimeout: 20_000 });
-configure({ asyncUtilTimeout: 8000 });
 
 afterEach(cleanUp);
 

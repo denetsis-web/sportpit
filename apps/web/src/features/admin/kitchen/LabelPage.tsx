@@ -1,14 +1,14 @@
 // Печать этикеток партии: название на русском и румынском, ккал, БЖУ, состав, аллергены,
 // дата и время приготовления, «съесть до», код партии. Размер этикетки — из настроек (labelSize).
 // На печать уходят только этикетки: остальное скрыто правилами @media print.
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { formatDateTime } from '@sportpit/shared/format';
 import { t as translate, type Lang } from '@sportpit/shared/i18n';
 import { labelSchema, MAX_LABEL_COPIES, type LabelData } from '@sportpit/shared/schemas/kitchen';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, TextField } from '../../../ui/index.ts';
+import { Banner, Button, TextField, useResource } from '../../../ui/index.ts';
 import { describeError } from '../../client/auth/errors.ts';
 import { RequireRole } from '../../client/auth/guards.tsx';
 import '../gyms/admin-forms.css';
@@ -66,24 +66,12 @@ export function LabelSheet({ label }: { label: LabelData }) {
 
 function Labels({ id }: { id: string }) {
   const { t } = useI18n();
-  const [label, setLabel] = useState<LabelData | null>(null);
-  const [error, setError] = useState<unknown>(null);
-  const [copies, setCopies] = useState('');
-
-  useEffect(() => {
-    let alive = true;
-    api
-      .get(`/kitchen/batches/${encodeURIComponent(id)}/label`, { schema: labelSchema })
-      .then((data) => {
-        if (!alive) return;
-        setLabel(data);
-        setCopies(String(data.copies));
-      })
-      .catch((e: unknown) => alive && setError(e));
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+  const { data: label, error } = useResource(
+    () => api.get(`/kitchen/batches/${encodeURIComponent(id)}/label`, { schema: labelSchema }),
+    [id],
+  );
+  // пока число копий не введено вручную, показываем то, что назначила кухня
+  const [typedCopies, setTypedCopies] = useState<string | null>(null);
 
   if (error) {
     return (
@@ -97,6 +85,7 @@ function Labels({ id }: { id: string }) {
   }
   if (!label) return <p role="status">{t('core.loading')}</p>;
 
+  const copies = typedCopies ?? String(label.copies);
   const count = Math.min(MAX_LABEL_COPIES, Math.max(1, Math.floor(Number(copies)) || 1));
   return (
     <>
@@ -114,7 +103,7 @@ function Labels({ id }: { id: string }) {
           label={t('kitchen.label.copies')}
           hint={t('kitchen.label.copies.hint')}
           value={copies}
-          onChange={(e) => setCopies(e.target.value)}
+          onChange={(e) => setTypedCopies(e.target.value)}
         />
         <div className="admin-actions">
           <Button onClick={() => window.print()}>{t('kitchen.label.print')}</Button>

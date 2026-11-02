@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
   PROMO_KINDS,
   promoResponseSchema,
@@ -8,7 +8,7 @@ import {
 } from '@sportpit/shared/schemas/billing';
 import { api } from '../../../api/index.ts';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
 import { describeError } from '../../client/auth/errors.ts';
 import { RequireRole } from '../../client/auth/guards.tsx';
 import { fieldMessage } from '../packages/AdminPackagesPage.tsx';
@@ -44,25 +44,18 @@ function valueFromDraft(draft: Draft): number | null {
 
 function AdminPromos() {
   const { t, date } = useI18n();
-  const [items, setItems] = useState<PromoDto[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const {
+    data: items,
+    error: loadError,
+    reload,
+  } = useResource<PromoDto[]>(
+    async () => (await api.get('/admin/promos', { schema: promosResponseSchema })).items,
+  );
+  const failed = loadError !== undefined;
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [created, setCreated] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      setItems((await api.get('/admin/promos', { schema: promosResponseSchema })).items);
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const value = valueFromDraft(draft);
   const valid = draft.code.trim().length >= 3 && value !== null && value > 0;
@@ -89,7 +82,7 @@ function AdminPromos() {
       });
       setDraft(EMPTY);
       setCreated(true);
-      await load();
+      reload();
     } catch (e) {
       setError(e);
     } finally {
@@ -106,7 +99,7 @@ function AdminPromos() {
     } catch (e) {
       setError(e);
     }
-    await load();
+    reload();
   }
 
   const shortValue = (promo: PromoDto) =>
@@ -121,7 +114,7 @@ function AdminPromos() {
         <Banner
           variant="error"
           action={
-            <Button variant="secondary" onClick={() => void load()}>
+            <Button variant="secondary" onClick={reload}>
               {t('core.action.retry')}
             </Button>
           }
@@ -205,7 +198,7 @@ function AdminPromos() {
         </form>
       </Card>
 
-      {items === null && !failed ? <p role="status">{t('core.loading')}</p> : null}
+      {items === undefined && !failed ? <p role="status">{t('core.loading')}</p> : null}
       {items && items.length === 0 ? <p>{t('billing.admin.promos.empty')}</p> : null}
       {items?.map((promo) => (
         <Card key={promo.id} title={promo.code} headingLevel={3}>

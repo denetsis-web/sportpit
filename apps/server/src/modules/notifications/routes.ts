@@ -4,12 +4,15 @@ import type { AppDeps, AppInstance } from '../../app.ts';
 import { currentUser, requireRole } from '../auth/index.ts';
 import { errors } from '../system/index.ts';
 import { watchSystemEvents } from './alerts.ts';
-import { notificationsFor } from './index.ts';
+import { notificationsFor, registerPrivacy } from './index.ts';
 
 export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   const api = notificationsFor(deps);
   const guard = { preHandler: requireRole() };
   const me = (req: FastifyRequest): number => currentUser(req)!.id;
+
+  // выгрузка и удаление данных клиента
+  registerPrivacy(deps);
 
   // Сбои оплаты и SMS → уведомление администраторам.
   watchSystemEvents(deps);

@@ -9,9 +9,9 @@ import {
   type TemperatureSlot,
 } from '@sportpit/shared/schemas/fulfillment';
 import { useI18n } from '../../../app/i18n.tsx';
-import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
+import { Banner, Button, Card, TextField, useResource } from '../../../ui/index.ts';
 import { RequireRole } from '../../client/auth/guards.tsx';
-import { errorText, SelectField, useResource } from '../gyms/common.tsx';
+import { errorText, SelectField } from '../gyms/common.tsx';
 import '../gyms/admin-forms.css';
 import {
   closeDay,

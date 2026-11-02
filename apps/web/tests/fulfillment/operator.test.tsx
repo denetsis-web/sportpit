@@ -1,6 +1,6 @@
-import { configure, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 import { nav } from '../../src/features/admin/operator/routes.tsx';
 import { filterNavByRole } from '../../src/features/admin/shell/menu.ts';
@@ -13,9 +13,6 @@ import {
   renderAt,
   user,
 } from './fixtures.tsx';
-
-vi.setConfig({ testTimeout: 20_000 });
-configure({ asyncUtilTimeout: 8000 });
 
 afterEach(cleanUp);
 

@@ -183,6 +183,8 @@ const ro: DictionaryOf<typeof ru> = {
   'error.promoCodeTaken': 'Un cod promoțional cu acest nume există deja.',
   'error.promoCodeFormat': 'Codul: de la 3 până la 40 de litere latine, cifre, „-” sau „_”.',
   'error.promoValue': 'Valoarea nu se potrivește acestui tip de cod promoțional.',
+  'error.promoUnlimited':
+    'Creditele gratuite fără „o dată pe client” trebuie limitate prin numărul de utilizări.',
   'error.promoDates': 'Verificați datele de valabilitate ale codului promoțional.',
   'error.refundNotFound': 'Rambursarea nu a fost găsită.',
   'error.refundNotPossible': 'Pentru această achiziție rambursarea nu este posibilă.',

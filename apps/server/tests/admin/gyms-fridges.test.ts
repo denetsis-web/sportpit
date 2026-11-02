@@ -225,3 +225,17 @@ describe('холодильники (R07, R45, R46)', () => {
     expect((await call(test.app, 'GET', '/admin/fridges')).statusCode).toBe(401);
   });
 });
+
+describe('срок приёма заказов холодильника: одно место расчёта (F1.16)', () => {
+  it('cutoffAt(fridgeId, date) — срок холодильника в день D−1 по Кишинёву; неизвестный холодильник — 18:00', async () => {
+    const test = await makeAdminApp();
+    const gym = await createGym(test);
+    const fridge = await createFridge(test, gym.id, { cutoffTime: '20:00' });
+    const admin = adminFor(test.app.deps);
+    // 10 марта 2026 Кишинёв ещё UTC+2: 20:00 → 18:00Z, 18:00 → 16:00Z
+    expect(admin.cutoffAt(fridge.id, '2026-03-11').toISOString()).toBe('2026-03-10T18:00:00.000Z');
+    expect(admin.cutoffAt('нет-такого', '2026-03-11').toISOString()).toBe(
+      '2026-03-10T16:00:00.000Z',
+    );
+  });
+});
