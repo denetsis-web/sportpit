@@ -1,6 +1,7 @@
 // Согласованность данных кухни и выдачи (F1.10): срок приёма нельзя двигать под готовую сводку,
 // холодильник с будущими заказами нельзя выключить, загрузка сверяет готовые порции с заказами.
 import { describe, expect, it } from 'vitest';
+import { kitchenFor } from '../../src/modules/kitchen/index.ts';
 import {
   call,
   closeIntake,
@@ -51,6 +52,37 @@ describe('смена срока приёма заказов под готову�
     )!.cutoff_time;
     const res = await patchFridge(test, { cutoffTime: current, name: 'Новое имя' });
     expect(res.statusCode).toBe(200);
+  });
+
+  it('планировщик уже создал пустые записи на сегодня и прошлые даты — они срок не блокируют; запись на завтра блокирует', async () => {
+    const test = await makeFulfillmentApp(); // 10 марта, 11:00 по Кишинёву: срок на завтра (18:00) ещё не наступил
+    const db = test.app.deps.db;
+    kitchenFor(test.app.deps).closeDue(); // то же, что раз в минуту делает kitchen-close: даты от −7 до +2
+    const dates = db
+      .query<{ date: string }>(
+        'SELECT date FROM kitchen_closures WHERE fridge_id = ? ORDER BY date',
+        [test.fridgeId],
+      )
+      .map((r) => r.date);
+    expect(dates.length).toBeGreaterThan(0); // записи есть, иначе тест ничего не доказывает
+    expect(dates).toContain('2026-03-10');
+    expect(dates.every((d) => d <= '2026-03-10')).toBe(true);
+
+    const ok = await patchFridge(test, { cutoffTime: '19:30' });
+    expect(ok.statusCode).toBe(200);
+
+    // снимок на завтра (срок приёма наступил, сводка зафиксирована) по-прежнему блокирует
+    test.clock.set('2026-03-11T05:00:00Z'); // для даты 12 марта срок (11 марта 19:30) ещё не наступил
+    await placeOk(test, test.client, {
+      items: [{ dishId: test.dishes[0]!, qty: 1 }],
+      date: '2026-03-12',
+    });
+    test.clock.set('2026-03-11T17:45:00Z'); // 19:45 по Кишинёву: срок на 12 марта прошёл
+    kitchenFor(test.app.deps).closeDue();
+    const blocked = await patchFridge(test, { cutoffTime: '20:30' });
+    expect(blocked.statusCode).toBe(409);
+    expect(blocked.json().error.code).toBe('fridge_snapshot_locked');
+    expect(blocked.json().error.message).toContain('2026-03-12');
   });
 
   it('без сводки срок меняется как раньше', async () => {

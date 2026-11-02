@@ -141,11 +141,13 @@ export function createFridge(
 
 /**
  * Срок приёма нельзя двигать под уже зафиксированную сводку кухни: партии рассчитаны по заказам,
- * принятым до прежнего срока. Считаются сводки на сегодня и позже (выдача по ним ещё не закончена).
+ * принятым до прежнего срока. Считаются только сводки на даты после сегодняшней (по Кишинёву): срок
+ * приёма на сегодня и прошлые даты уже ни на что не влияет, а планировщик кухни создаёт для них
+ * (пустые) записи каждую минуту, так что они не должны блокировать правку.
  */
 function assertCutoffNotFrozen(db: Db, clock: Clock, fridgeId: string): void {
   const frozen = db.get<{ date: string }>(
-    'SELECT date FROM kitchen_closures WHERE fridge_id = ? AND date >= ? ORDER BY date LIMIT 1',
+    'SELECT date FROM kitchen_closures WHERE fridge_id = ? AND date > ? ORDER BY date LIMIT 1',
     [fridgeId, clock.localDate()],
   );
   if (frozen) {
