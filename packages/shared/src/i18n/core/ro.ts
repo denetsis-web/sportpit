@@ -37,7 +37,18 @@ const ro: DictionaryOf<typeof ru> = {
   'home.welcome': 'Bun venit',
   'home.lead':
     'Aici comandați boxuri echilibrate, cu calorii și macro exacte, și le ridicați din frigiderul sălii dvs.',
-  'home.stub': 'Secțiunile vor apărea pe măsură ce aplicația este gata.',
+  'home.sections': 'Secțiunile aplicației',
+  'home.login': 'Autentificare',
+  'home.loginHint':
+    'Cu numărul de telefon și codul din SMS: este necesară pentru a comanda boxuri.',
+  'home.menu': 'Feluri cu calorii și macro, compoziție și alergeni.',
+  'home.packages': 'Pachete de boxuri și plata.',
+  'home.orders': 'Comenzile dvs., mutare și anulare până la termen.',
+  'home.pickup': 'Ce și când ridicați din frigider.',
+  'home.tracker': 'Ce ați mâncat pe zi și pe săptămână, față de norma dvs.',
+  'home.profile': 'Chestionar, norma nutrițională, limba și acorduri.',
+  'home.support': 'Reclamație despre un box și răspunsurile suportului.',
+  'home.admin': 'Bucătărie, eliberare și administrare.',
 
   'notFound.title': 'Pagina nu a fost găsită',
   'notFound.body': 'Această pagină nu există. Reveniți la pagina principală.',

@@ -143,6 +143,8 @@ const ru = {
   'csv.noPackage': 'Без пакета',
   'csv.boxes': 'Выдано боксов',
   'csv.revenue': 'Выручка, лей',
+  'csv.purchasesCount': 'Оплачено пакетов',
+  'csv.purchasesTotal': 'Сумма, лей',
   'csv.dish': 'Блюдо',
   'csv.noDish': 'Лишний бокс без заказа',
   'csv.cooked': 'Приготовлено',

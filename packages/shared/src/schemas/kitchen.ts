@@ -117,6 +117,8 @@ export const labelSchema = z.object({
     proteinG: z.number(),
     fatG: z.number(),
     carbsG: z.number(),
+    /** Клетчатка, г; `null` у партий, созданных до появления поля в снимке блюда. */
+    fiberG: z.number().nullable(),
     weightG: z.number().int(),
     allergens: z.array(allergenSchema),
   }),

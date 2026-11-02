@@ -234,6 +234,7 @@ const LABEL = {
     proteinG: 42,
     fatG: 14,
     carbsG: 55,
+    fiberG: 6,
     weightG: 380,
     allergens: ['lactose', 'gluten'],
   },
@@ -243,6 +244,14 @@ const LABEL = {
 };
 
 describe('печатная страница этикетки (R33)', () => {
+  it('старая партия без клетчатки в снимке: строка клетчатки не печатается, остальное на месте', () => {
+    registerRealDictionaries();
+    render(<LabelSheet label={{ ...LABEL, dish: { ...LABEL.dish, fiberG: null } } as never} />);
+    const text = screen.getByTestId('label').textContent ?? '';
+    expect(text).not.toContain('Fibre');
+    expect(text).toContain('У/C 55');
+  });
+
   it('содержит название на RU и RO, ккал, БЖУ, состав, аллергены, даты, код партии и размер', async () => {
     registerRealDictionaries();
     const view = render(<LabelSheet label={LABEL as never} />);
@@ -257,6 +266,7 @@ describe('печатная страница этикетки (R33)', () => {
       'Б/P 42',
       'Ж/G 14',
       'У/C 55',
+      'Клетч./Fibre 6',
       'в порции 380 г / într-o porție de 380 g',
       'куриная грудка, рис, молоко',
       'piept de pui, orez, lapte',

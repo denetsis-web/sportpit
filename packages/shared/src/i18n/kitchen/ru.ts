@@ -60,6 +60,7 @@ const ru = {
   'label.protein': 'Б',
   'label.fat': 'Ж',
   'label.carbs': 'У',
+  'label.fiber': 'Клетч.',
   'label.perServing': 'в порции {weight} г',
   'label.composition': 'Состав',
   'label.allergens': 'Аллергены',

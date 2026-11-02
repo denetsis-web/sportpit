@@ -63,6 +63,7 @@ const ro: DictionaryOf<typeof ru> = {
   'label.protein': 'P',
   'label.fat': 'G',
   'label.carbs': 'C',
+  'label.fiber': 'Fibre',
   'label.perServing': 'într-o porție de {weight} g',
   'label.composition': 'Compoziție',
   'label.allergens': 'Alergeni',

@@ -65,6 +65,14 @@ export function salesCsv(report: SalesReport, lang: Lang): CsvFile {
     leiCell(row.revenueBani),
   ]);
   rows.push([label('total'), null, report.totals.boxes, leiCell(report.totals.revenueBani)]);
+  // Проданные пакеты — отдельным блоком под таблицей, те же данные, что на экране и в JSON.
+  rows.push([], [t(lang, 'reports.sales.purchases.title')]);
+  if (report.purchases.length === 0) {
+    rows.push([t(lang, 'reports.sales.purchases.empty')]);
+  } else {
+    rows.push([label('package'), label('purchasesCount'), label('purchasesTotal')]);
+    for (const p of report.purchases) rows.push([p.packageBoxes, p.count, leiCell(p.totalBani)]);
+  }
   return {
     filename: fileName('sales', report.range),
     body: toCsv([label('gym'), label('package'), label('boxes'), label('revenue')], rows),

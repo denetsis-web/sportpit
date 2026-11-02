@@ -97,6 +97,7 @@ describe('данные этикетки (R33)', () => {
         proteinG: 42,
         fatG: 14,
         carbsG: 55,
+        fiberG: 6,
         composition: {
           ru: 'куриная грудка, рис, брокколи',
           ro: 'piept de pui, orez, broccoli',
@@ -124,6 +125,19 @@ describe('данные этикетки (R33)', () => {
     expect(label.size).toEqual({ widthMm: 70, heightMm: 50 });
     expect(label.dish.name.ru).toBe('Лосось с овощами');
     expect(label.dish.calories).toBe(480);
+  });
+
+  it('клетчатка на этикетке берётся из снимка блюда на партии и не меняется после правки блюда', async () => {
+    const test = await makeKitchenApp();
+    const batch = await cookedBatch(test);
+    const fixed = await call(test, 'PATCH', `/admin/dishes/${test.dishes[1]}`, test.admin, {
+      fiberG: 20,
+    });
+    expect(fixed.statusCode).toBe(200);
+    const label = (
+      await call(test, 'GET', `/kitchen/batches/${batch.id}/label`, test.kitchen)
+    ).json();
+    expect(label.dish.fiberG).toBe(6);
   });
 
   it('печатать нечего, пока партия не приготовлена: 409 на языке запроса', async () => {

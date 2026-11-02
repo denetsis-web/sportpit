@@ -43,7 +43,9 @@ export function LabelSheet({ label }: { label: LabelData }) {
         </strong>
         {' · '}
         {slash('label.protein')} {dish.proteinG} · {slash('label.fat')} {dish.fatG} ·{' '}
-        {slash('label.carbs')} {dish.carbsG} ({both('label.perServing', { weight: dish.weightG })})
+        {slash('label.carbs')} {dish.carbsG}
+        {dish.fiberG === null ? null : ` · ${slash('label.fiber')} ${dish.fiberG}`} (
+        {both('label.perServing', { weight: dish.weightG })})
       </p>
       <p>
         <strong>{both('label.composition')}:</strong> {dish.composition.ru} / {dish.composition.ro}

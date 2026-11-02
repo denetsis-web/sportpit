@@ -13,7 +13,6 @@ export function HomePage() {
           <strong>{t('core.slogan')}</strong>
         </p>
         <p>{t('core.home.lead')}</p>
-        <p>{t('core.home.stub')}</p>
       </Card>
     </>
   );

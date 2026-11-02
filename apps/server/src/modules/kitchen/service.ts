@@ -40,6 +40,8 @@ interface DishSnapshot {
   proteinG: number;
   fatG: number;
   carbsG: number;
+  /** Нет в снимках партий, созданных до появления клетчатки на этикетке. */
+  fiberG?: number;
   weightG: number;
   allergens: Allergen[];
   shelfLifeHours: number;
@@ -126,6 +128,7 @@ export function createKitchenService(deps: AppDeps): KitchenApi {
           proteinG: dish.proteinG,
           fatG: dish.fatG,
           carbsG: dish.carbsG,
+          fiberG: dish.fiberG,
           weightG: dish.weightG,
           allergens: dish.allergens,
           shelfLifeHours: dish.shelfLifeHours,
@@ -465,6 +468,7 @@ export function createKitchenService(deps: AppDeps): KitchenApi {
         proteinG: dish.proteinG,
         fatG: dish.fatG,
         carbsG: dish.carbsG,
+        fiberG: dish.fiberG ?? null,
         weightG: dish.weightG,
         allergens: dish.allergens,
       },

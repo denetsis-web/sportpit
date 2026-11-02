@@ -51,7 +51,55 @@ describe('выгрузка отчётов (R37.1)', () => {
       'Зал «Тест»;20;1;109,00',
       'Итого;;6;664,00',
       '',
+      'Проданные пакеты за период',
+      'Пакет, боксов;Оплачено пакетов;Сумма, лей',
+      '12;3;4284,00',
+      '20;1;2180,00',
+      '30;1;2970,00',
+      '',
     ]);
+  });
+
+  it('продажи: блок проданных пакетов в файле совпадает с JSON-отчётом и с экраном', async () => {
+    const day = await makeReportsDay();
+    const { purchases } = (await report(day, 'sales')).json() as {
+      purchases: Array<{ packageBoxes: number; count: number; totalBani: number }>;
+    };
+    expect(purchases).toHaveLength(3);
+    const lines = (await reportCsv(day, 'sales')).body.slice(1).split('\r\n');
+    const at = lines.indexOf('Проданные пакеты за период');
+    expect(at).toBeGreaterThan(0);
+    const block = lines.slice(at + 2, at + 2 + purchases.length).map((l) => l.split(';'));
+    const lei = (bani: number) =>
+      `${Math.floor(bani / 100)},${String(bani % 100).padStart(2, '0')}`;
+    expect(block).toEqual(
+      purchases.map((p) => [String(p.packageBoxes), String(p.count), lei(p.totalBani)]),
+    );
+    // сумма по пакетам в файле равна сумме JSON (в бани, из текста «1234,50» обратно)
+    const sumCsv = block.reduce(
+      (sum, [, , total]) => sum + Math.round(Number(total!.replace(',', '.')) * 100),
+      0,
+    );
+    expect(sumCsv).toBe(purchases.reduce((sum, p) => sum + p.totalBani, 0));
+  });
+
+  it('продажи за период без пакетов: заголовок блока и пометка «не продавались»', async () => {
+    const day = await makeReportsDay();
+    const csv = await reportCsv(day, 'sales', 'from=2026-03-12&to=2026-03-20');
+    const lines = csv.body.slice(1).split('\r\n');
+    const at = lines.indexOf('Проданные пакеты за период');
+    expect(at).toBeGreaterThan(0);
+    expect(lines[at + 1]).toBe('Пакеты за период не продавались.');
+  });
+
+  it('продажи на румынском: блок пакетов подписан на румынском', async () => {
+    const day = await makeReportsDay();
+    const res = await reportCsv(day, 'sales', undefined, undefined, 'ro');
+    const lines = res.body.slice(1).split('\r\n');
+    const at = lines.findIndex((l) => l.startsWith('Pachete'));
+    expect(at).toBeGreaterThan(0);
+    expect(lines[at + 1]).toBe('Pachet, boxuri;Pachete plătite;Sumă, lei');
+    expect(lines[at + 2]).toBe('12;3;4284,00');
   });
 
   it('заголовок и подписи на румынском по Accept-Language', async () => {
@@ -111,8 +159,8 @@ describe('выгрузка отчётов (R37.1)', () => {
     expect(page.rows).toHaveLength(50);
     expect(page.page.total).toBe(58);
     const lines = (await reportCsv(day, 'sales')).body.slice(1).split('\r\n');
-    // заголовок + 58 строк + итог + пустая строка после последнего CRLF
-    expect(lines).toHaveLength(1 + 58 + 1 + 1);
+    // заголовок + 58 строк + итог + блок пакетов (пустая строка, заголовок, шапка, 3 пакета) + пустая строка после последнего CRLF
+    expect(lines).toHaveLength(1 + 58 + 1 + 6 + 1);
   });
 
   it('доступ только у администратора', async () => {

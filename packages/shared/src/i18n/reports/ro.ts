@@ -144,6 +144,8 @@ const ro: DictionaryOf<typeof ru> = {
   'csv.noPackage': 'Fără pachet',
   'csv.boxes': 'Boxuri ridicate',
   'csv.revenue': 'Venit, lei',
+  'csv.purchasesCount': 'Pachete plătite',
+  'csv.purchasesTotal': 'Sumă, lei',
   'csv.dish': 'Felul',
   'csv.noDish': 'Box în plus, fără comandă',
   'csv.cooked': 'Preparat',
