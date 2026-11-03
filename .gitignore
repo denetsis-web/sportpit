@@ -13,3 +13,7 @@ coverage/
 *.db-shm
 *.tsbuildinfo
 .autopilot/serve.*
+
+# стенд: секреты и собранные архивы
+/deploy/stand.env
+/deploy/out/

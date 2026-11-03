@@ -81,7 +81,13 @@ export function authFor(deps: AuthDeps): AuthApi {
   const cached = instances.get(deps);
   if (cached) return cached;
   const { db, clock } = deps;
-  const otp = createOtpService({ db, clock, sms: deps.sms, secret: deps.config.sessionSecret });
+  const otp = createOtpService({
+    db,
+    clock,
+    sms: deps.sms,
+    secret: deps.config.sessionSecret,
+    demo: deps.config.demoOtp,
+  });
   const sessions = createSessionService(db, clock);
 
   const api: AuthApi = {

@@ -104,6 +104,59 @@ describe('заглушка SMS в production не пишет коды в жур�
   });
 });
 
+describe('стенд: фиксированный код входа для демо-номеров', () => {
+  const DEMO = { DEMO_OTP_CODE: '424242', DEMO_OTP_PHONES: '+37360000001, +37360000002' };
+  const verify = (app: AppInstance, phone: string, code: string) =>
+    app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/otp/verify',
+      payload: { phone, code },
+      headers: WRITE,
+    });
+  const request = (app: AppInstance, phone: string) =>
+    app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/otp/request',
+      payload: { phone },
+      headers: WRITE,
+    });
+
+  it('задаются только вместе: код без номеров или номера без кода — ошибка конфигурации', () => {
+    expect(() => loadConfig({ DEMO_OTP_CODE: '424242' })).toThrow(/DEMO_OTP_PHONES/);
+    expect(() => loadConfig({ DEMO_OTP_PHONES: '+37360000001' })).toThrow(/DEMO_OTP_CODE/);
+    expect(() => loadConfig({ ...DEMO, DEMO_OTP_CODE: '42' })).toThrow(/6 цифр/);
+  });
+
+  it('в production допустим только на стенде: без флага или с боевой SMS — отказ', () => {
+    const noFlag = loadConfig({
+      ...SAFE_ENV,
+      ...DEMO,
+      PAYMENT_PROVIDER: 'maib',
+      SMS_PROVIDER: 'x',
+    });
+    expect(productionProblems(noFlag).join('\n')).toContain('DEMO_OTP_CODE');
+    const realSms = loadConfig({
+      ...SAFE_ENV,
+      ...DEMO,
+      ALLOW_STUB_IN_PRODUCTION: '1',
+      SMS_PROVIDER: 'provider',
+    });
+    expect(productionProblems(realSms).join('\n')).toContain('DEMO_OTP_CODE');
+    const stand = loadConfig({ ...SAFE_ENV, ...DEMO, ALLOW_STUB_IN_PRODUCTION: '1' });
+    expect(productionProblems(stand)).toEqual([]);
+  });
+
+  it('демо-номер входит по фиксированному коду, остальные номера — нет', async () => {
+    const config = loadConfig({ ...SAFE_ENV, ...DEMO, ALLOW_STUB_IN_PRODUCTION: '1' });
+    const app = await buildApp({ config });
+    open.push(app);
+    expect((await request(app, '+37360000001')).statusCode).toBe(200);
+    expect((await verify(app, '+37360000001', '424242')).statusCode).toBe(200);
+    expect((await request(app, '+37360000009')).statusCode).toBe(200);
+    expect((await verify(app, '+37360000009', '424242')).statusCode).toBe(400);
+  });
+});
+
 /** Боевой шлюз «снаружи» (provider не stub), но разбирающий колбэки как заглушка: ловит обход проверки. */
 function fakeRealGateway(inner: StubPaymentGateway): PaymentGateway {
   return {

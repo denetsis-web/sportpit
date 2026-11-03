@@ -31,6 +31,8 @@ export interface OtpDeps {
   sms: SmsSender;
   /** Секрет для хэша кодов. Не задан — на время работы процесса берётся случайный. */
   secret: string | undefined;
+  /** Стенд: для этих номеров код всегда один (в production допускает только конфигурация стенда). */
+  demo?: { code: string; phones: string[] } | undefined;
 }
 
 export interface OtpService {
@@ -45,7 +47,7 @@ export interface OtpService {
   purge(olderThanHours?: number): number;
 }
 
-export function createOtpService({ db, clock, sms, secret }: OtpDeps): OtpService {
+export function createOtpService({ db, clock, sms, secret, demo }: OtpDeps): OtpService {
   const key = secret ?? randomBytes(32).toString('hex');
   const hash = (phone: string, code: string): Buffer =>
     createHmac('sha256', key).update(`otp:${phone}:${code}`).digest();
@@ -77,7 +79,9 @@ export function createOtpService({ db, clock, sms, secret }: OtpDeps): OtpServic
 
   return {
     async request(phone, lang) {
-      const code = String(randomInt(0, 10 ** OTP_LENGTH)).padStart(OTP_LENGTH, '0');
+      const code = demo?.phones.includes(phone)
+        ? demo.code
+        : String(randomInt(0, 10 ** OTP_LENGTH)).padStart(OTP_LENGTH, '0');
       // Проверка лимита и запись строки — одна транзакция, поэтому два одновременных запроса
       // не обойдут лимит; SMS уходит уже после записи.
       const rowId = db.tx((tx) => {

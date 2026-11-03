@@ -29,6 +29,8 @@ export const ENV_VARIABLES = [
   'SMS_SENDER_ID',
   'FILE_STORAGE',
   'ALLOW_STUB_IN_PRODUCTION',
+  'DEMO_OTP_CODE',
+  'DEMO_OTP_PHONES',
   'TRUST_PROXY',
 ] as const;
 
@@ -62,6 +64,8 @@ export interface Config {
   storage: { provider: string };
   /** `ALLOW_STUB_IN_PRODUCTION=1`: осознанно пустить в production заглушки, http-адрес (демо, стенд). */
   allowStubInProduction: boolean;
+  /** Стенд: для перечисленных номеров код входа всегда один (`DEMO_OTP_CODE` + `DEMO_OTP_PHONES`). */
+  demoOtp: { code: string; phones: string[] } | undefined;
   /** `TRUST_PROXY`: по умолчанию false — адрес клиента берётся из соединения, а не из заголовков. */
   trustProxy: TrustProxy;
   backup: { keep: number };
@@ -80,6 +84,22 @@ function resolvePath(value: string | undefined, fallback: string): string {
 function readFlag(env: Env, name: EnvName): boolean {
   const raw = pick(env, name)?.toLowerCase();
   return raw === '1' || raw === 'true' || raw === 'yes';
+}
+
+/** `DEMO_OTP_CODE` (6 цифр) и `DEMO_OTP_PHONES` (номера через запятую): нужны оба или ни одного. */
+function readDemoOtp(env: Env): Config['demoOtp'] {
+  const code = pick(env, 'DEMO_OTP_CODE');
+  const phones = (pick(env, 'DEMO_OTP_PHONES') ?? '')
+    .split(',')
+    .map((phone) => phone.trim())
+    .filter(Boolean);
+  if (code === undefined && phones.length === 0) return undefined;
+  if (code === undefined || !/^\d{6}$/.test(code) || phones.length === 0) {
+    throw new Error(
+      'Переменные DEMO_OTP_CODE (6 цифр) и DEMO_OTP_PHONES (номера через запятую) задаются вместе.',
+    );
+  }
+  return { code, phones };
 }
 
 /** `TRUST_PROXY`: `true`/`false`, число прокси в цепочке или адрес/подсеть (список через запятую). */
@@ -133,6 +153,7 @@ export function loadConfig(env: Env = process.env): Config {
     },
     storage: { provider: pick(env, 'FILE_STORAGE') ?? 'local' },
     allowStubInProduction: readFlag(env, 'ALLOW_STUB_IN_PRODUCTION'),
+    demoOtp: readDemoOtp(env),
     trustProxy: readTrustProxy(env),
     backup: { keep: readInt(env, 'BACKUP_KEEP', 14, 1, 365) },
   };
@@ -158,6 +179,7 @@ export function redactedConfig(config: Config) {
     },
     storage: config.storage.provider,
     allowStubInProduction: config.allowStubInProduction,
+    hasDemoOtp: config.demoOtp !== undefined,
     trustProxy: config.trustProxy,
     publicBaseUrlHttps: config.publicBaseUrl.startsWith('https://'),
     hasSessionSecret: config.sessionSecret !== undefined,
@@ -185,6 +207,11 @@ export function productionProblems(config: Config): string[] {
     if (!config.publicBaseUrl.startsWith('https://')) {
       problems.push('PUBLIC_BASE_URL должен начинаться с https://.');
     }
+  }
+  if (config.demoOtp && (!config.allowStubInProduction || config.sms.provider !== 'stub')) {
+    problems.push(
+      'DEMO_OTP_CODE: фиксированный код входа допустим только на стенде (ALLOW_STUB_IN_PRODUCTION=1 и SMS-заглушка).',
+    );
   }
   return problems;
 }
