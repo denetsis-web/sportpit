@@ -36,8 +36,19 @@ export default defineConfig({
       workbox: {
         // Оболочка приложения целиком в кэше: открывается без сети.
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        // Лендинг не для установленного приложения: его чанки, стили и знаки бренда в предкэш не берём
+        // (шрифты в globPatterns не входят). Загружаются по сети при первом открытии `/`, `/ro`, `/legal`.
+        // Имена чанков — по входным файлам лендинга; scripts/check-bundle.ts проверяет, что в кэш не попал ни один.
+        globIgnores: [
+          'assets/Landing*',
+          'assets/Legal*',
+          'assets/Calculator*',
+          'assets/Join*',
+          'brand/**',
+        ],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // /api/ — не оболочка; robots.txt и sitemap.xml — служебные файлы, их отдаёт сервер
+        navigateFallbackDenylist: [/^\/api\//, /^\/robots\.txt$/, /^\/sitemap\.xml$/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

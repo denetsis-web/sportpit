@@ -152,6 +152,24 @@ if (existsSync(join(outDir, 'sw.js'))) {
     /api\\?\/v1\\?\/\(menu\|dishes\)/.test(sw),
     'правило кэша меню не нацелено на /api/v1/menu',
   );
+  // Служебные файлы отдаёт сервер: service worker не должен подменять их оболочкой.
+  check(
+    /robots\\?\.txt/.test(sw) && /sitemap\\?\.xml/.test(sw),
+    'robots.txt и sitemap.xml не добавлены в navigateFallbackDenylist service worker',
+  );
+  // Лендинг не должен лежать в предкэше установленного приложения: его чанки, стили и знаки бренда.
+  // Чанки лендинга узнаём по классам `lp-`: они есть только в коде и стилях лендинга.
+  const landingFiles = readdirSync(join(outDir, 'assets'))
+    .filter((f) => /\.(js|css)$/.test(f))
+    .map((f) => `assets/${f}`)
+    .filter((f) => read(f).includes('lp-'));
+  check(landingFiles.length > 0, 'не найден чанк лендинга (признак: классы lp-)');
+  for (const file of landingFiles) {
+    check(!initial.has(file), `код лендинга ${file} попал в начальный набор`);
+    check(!sw.includes(file), `файл лендинга ${file} попал в предкэш service worker`);
+  }
+  check(!sw.includes('brand/'), 'знаки бренда лендинга (brand/) попали в предкэш service worker');
+  console.log(`Лендинг вне предкэша: ${landingFiles.join(', ') || 'не найден'}`);
 }
 
 if (failures.length > 0) {

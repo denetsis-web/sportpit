@@ -36,6 +36,7 @@ import {
   type Scheduler,
   type SystemApi,
 } from './modules/system/index.ts';
+import { registerSeo } from './seo.ts';
 
 /** Всё, что получает каждый модуль в `registerRoutes(app, deps)` и `registerJobs(scheduler, deps)`. */
 export interface AppDeps {
@@ -212,6 +213,14 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<AppInstan
 
   const webIndex = join(config.webDistDir, 'index.html');
   const serveWeb = options.serveWeb === true && existsSync(webIndex);
+
+  registerSeo(app, {
+    config,
+    indexHtmlPath: webIndex,
+    dictionaries: t,
+    webDistDir: config.webDistDir,
+    servePages: serveWeb,
+  });
 
   app.setNotFoundHandler((req, reply) => {
     if (serveWeb && req.method === 'GET' && !req.url.startsWith('/api/')) {
