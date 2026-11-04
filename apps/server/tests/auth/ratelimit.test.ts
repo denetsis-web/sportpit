@@ -24,37 +24,37 @@ const post = (
   });
 
 describe('лимит по IP на /auth/otp/request', () => {
-  it('11-й запрос за окно с одного адреса — 429 «подождите N сек», другой адрес не задет', async () => {
+  it('61-й запрос за окно с одного адреса — 429 «подождите N сек», другой адрес не задет', async () => {
     const test = await makeApp();
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 60; i++) {
       const res = await post(test, '/auth/otp/request', { phone: phoneN(i) }, { ip: '10.0.0.1' });
       expect(res.statusCode, `запрос ${i}`).toBe(200);
     }
-    const eleventh = await post(
+    const blocked = await post(
       test,
       '/auth/otp/request',
-      { phone: phoneN(11) },
+      { phone: phoneN(61) },
       { ip: '10.0.0.1' },
     );
-    expect(eleventh.statusCode).toBe(429);
-    expect(eleventh.json().error.code).toBe('rate_limited');
-    expect(eleventh.json().error.message).toMatch(/^Слишком часто\. Подождите \d+ сек\.$/);
-    expect(test.sms.outbox).toHaveLength(10); // на 11-й SMS не ушло
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.json().error.code).toBe('rate_limited');
+    expect(blocked.json().error.message).toMatch(/^Слишком часто\. Подождите \d+ сек\.$/);
+    expect(test.sms.outbox).toHaveLength(60); // на 61-й SMS не ушло
 
-    const other = await post(test, '/auth/otp/request', { phone: phoneN(11) }, { ip: '10.0.0.2' });
+    const other = await post(test, '/auth/otp/request', { phone: phoneN(61) }, { ip: '10.0.0.2' });
     expect(other.statusCode).toBe(200);
 
     // окно прошло — снова можно
     test.clock.advance(11 * MINUTE);
-    const later = await post(test, '/auth/otp/request', { phone: phoneN(12) }, { ip: '10.0.0.1' });
+    const later = await post(test, '/auth/otp/request', { phone: phoneN(62) }, { ip: '10.0.0.1' });
     expect(later.statusCode).toBe(200);
   });
 });
 
 describe('лимит по IP на /auth/otp/verify', () => {
-  it('11-я проверка кода с одного адреса — 429, даже если номера разные', async () => {
+  it('61-я проверка кода с одного адреса — 429, даже если номера разные', async () => {
     const test = await makeApp();
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 60; i++) {
       const res = await post(
         test,
         '/auth/otp/verify',
@@ -63,18 +63,18 @@ describe('лимит по IP на /auth/otp/verify', () => {
       );
       expect(res.statusCode, `проверка ${i}`).toBe(400);
     }
-    const eleventh = await post(
+    const blocked = await post(
       test,
       '/auth/otp/verify',
-      { phone: phoneN(11), code: '123456' },
+      { phone: phoneN(61), code: '123456' },
       { ip: '10.0.0.1' },
     );
-    expect(eleventh.statusCode).toBe(429);
-    expect(eleventh.json().error.message).toContain('Подождите');
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.json().error.message).toContain('Подождите');
     const other = await post(
       test,
       '/auth/otp/verify',
-      { phone: phoneN(11), code: '123456' },
+      { phone: phoneN(61), code: '123456' },
       { ip: '10.0.0.2' },
     );
     expect(other.statusCode).toBe(400);
@@ -87,7 +87,7 @@ describe('TRUST_PROXY', () => {
 
   async function burst(test: TestApp, forwarded: (i: number) => string): Promise<number[]> {
     const codes: number[] = [];
-    for (let i = 1; i <= 11; i++) {
+    for (let i = 1; i <= 61; i++) {
       const res = await post(
         test,
         '/auth/otp/request',
@@ -130,14 +130,14 @@ describe('лимит по пользователю на /profile/phone/request',
       });
       expect(res.statusCode, `запрос ${i}`).toBe(200);
     }
-    const eleventh = await test.app.inject({
+    const blocked = await test.app.inject({
       method: 'POST',
       url: '/api/v1/profile/phone/request',
       payload: { phone: phoneN(11) },
       headers: { ...WRITE, cookie },
     });
-    expect(eleventh.statusCode).toBe(429);
-    expect(eleventh.json().error.message).toContain('Подождите');
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.json().error.message).toContain('Подождите');
   });
 });
 

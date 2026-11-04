@@ -15,7 +15,7 @@ import {
   AppError,
   createRateLimiter,
   errors,
-  LOGIN_RATE_MAX,
+  LOGIN_IP_RATE_MAX,
   LOGIN_RATE_WINDOW_MS,
   noStore,
   parseWith,
@@ -49,7 +49,7 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
     (req.cookies as Record<string, string | undefined>)[SESSION_COOKIE];
   // Лимиты по адресу клиента: перебор номеров и кодов с одной машины. Адрес берётся из соединения;
   // за своим прокси задайте TRUST_PROXY, иначе все клиенты будут выглядеть как адрес прокси.
-  const limit = { clock: deps.clock, max: LOGIN_RATE_MAX, windowMs: LOGIN_RATE_WINDOW_MS };
+  const limit = { clock: deps.clock, max: LOGIN_IP_RATE_MAX, windowMs: LOGIN_RATE_WINDOW_MS };
   const requestLimiter = createRateLimiter(limit);
   const verifyLimiter = createRateLimiter(limit);
 
@@ -64,8 +64,8 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
   app.post('/auth/otp/verify', async (req, reply) => {
     noStore(reply);
     verifyLimiter.hit(req.ip);
-    const { phone, code, lang } = parse(otpVerifySchema, req.body);
-    const { user, token } = auth.verifyOtp(phone, code, lang);
+    const { phone, code, lang, attribution } = parse(otpVerifySchema, req.body);
+    const { user, token } = auth.verifyOtp(phone, code, lang, attribution);
     reply.setCookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_TTL_SECONDS });
     return { user };
   });

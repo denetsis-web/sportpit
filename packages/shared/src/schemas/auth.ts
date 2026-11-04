@@ -41,11 +41,40 @@ export const otpRequestResponseSchema = z.object({
 });
 export type OtpRequestResponse = z.infer<typeof otpRequestResponseSchema>;
 
+// ---- источник привлечения ----
+// Схема лежит здесь, а не в growth.ts: growth.ts берёт отсюда телефон и язык, и обратный импорт дал бы цикл.
+// Из `@sportpit/shared/schemas/growth` она реэкспортируется — клиент и сервер берут её оттуда.
+
+/** Откуда пришёл человек: метка из адреса (QR в зале, тренер, Telegram, Instagram), прямой заход или иное. */
+export const ATTRIBUTION_SOURCES = ['gym', 'trainer', 'tg', 'ig', 'direct', 'other'] as const;
+export type AttributionSource = (typeof ATTRIBUTION_SOURCES)[number];
+
+const attributionLabel = z
+  .string()
+  .regex(/^[a-z0-9_-]{1,40}$/)
+  .nullable()
+  .optional();
+
+export const attributionSchema = z.object({
+  source: z.enum(ATTRIBUTION_SOURCES),
+  /** Метка конкретного зала, тренера или поста: безопасная строка. */
+  ref: attributionLabel,
+  campaign: attributionLabel,
+  /** Постоянный анонимный номер браузера: есть только у согласившихся на аналитику. */
+  anonId: z.uuid().nullable().optional(),
+});
+export type Attribution = z.infer<typeof attributionSchema>;
+
 export const otpVerifySchema = z.object({
   phone: phoneSchema,
   code: otpCodeSchema,
   /** Язык интерфейса на устройстве: сохраняется в профиле. */
   lang: langSchema.optional(),
+  /**
+   * Источник привлечения: учитывается только для НОВОГО пользователя. Испорченное значение не должно
+   * мешать входу, поэтому неверная атрибуция молча отбрасывается (регистрация учтётся как `direct`).
+   */
+  attribution: attributionSchema.optional().catch(undefined),
 });
 export type OtpVerify = z.infer<typeof otpVerifySchema>;
 

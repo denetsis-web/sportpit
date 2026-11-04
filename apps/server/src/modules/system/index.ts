@@ -16,6 +16,13 @@ export * from './i18n.ts';
 export * from './ratelimit.ts';
 export * from './scheduler.ts';
 
+/**
+ * Запросов входа с одного IP за окно `LOGIN_RATE_WINDOW_MS` — отдельно на выдачу кода и на проверку (G01).
+ * Зал с общим Wi-Fi даёт много людей с одного адреса, поэтому здесь запас; лимиты на номер (раз в минуту,
+ * 5 в час, 5 попыток) и на пользователя (смена телефона, `LOGIN_RATE_MAX`) остаются прежними.
+ */
+export const LOGIN_IP_RATE_MAX = 60;
+
 /** То, что модули получают в `deps.system`. */
 export interface SystemApi {
   logEvent(kind: string, detail?: EventDetail): SystemEvent | undefined;

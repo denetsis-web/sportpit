@@ -85,4 +85,12 @@ Node ≥ 22.13 (локально 24), ESM, TypeScript strict; Fastify 5, `node:s
 
 ## Что построено (заполняется по ходу сборки)
 
-_пока ничего_
+### T01 — сервер growth (коммит ниже в истории, «T01: …»)
+
+- `growth/index.ts`: `recordSignup(db, clock, userId, attribution|undefined): void`; `AuthApi.verifyOtp(phone, code, lang?, attribution?)`.
+- `@sportpit/shared/schemas/growth`: `ATTRIBUTION_SOURCES`, `attributionSchema` (определена в `schemas/auth.ts` из-за цикла импорта, реэкспортируется), `waitlistJoinSchema`, `trackEventSchema`, `TRACK_KINDS`, `waitlistEntrySchema`, `waitlistListQuerySchema`, `waitlistListSchema`, `waitlistCsvQuerySchema`, `funnelQuerySchema`, `funnelRowSchema`, `funnelReportSchema`, `WAITLIST_CONSENT_VERSION`, `WAITLIST_PAGE_SIZE = 50`.
+- HTTP: `POST /waitlist` (200 `{ok:true}`), `POST /track` (204), `GET /admin/waitlist`, `GET /admin/waitlist/csv` (язык заголовков — параметр `labels=ru|ro`, потому что `lang` занят фильтром), `DELETE /admin/waitlist/:id` (204), `GET /admin/funnel` → `{from,to,rows}`: 6 источников в порядке `ATTRIBUTION_SOURCES` + `total`, всегда все строки.
+- Словарь `growth` (готов для таска 03): `nav.waitlist`, `nav.funnel`, `waitlist.*`, `funnel.*`, `goal.*`, `lang.*`, `source.*`, `csv.*`, `error.*`.
+- Лимит входа по IP: `LOGIN_IP_RATE_MAX = 60` в `system/index.ts` (`LOGIN_RATE_MAX = 10` остался для смены телефона).
+- Шрифты `@fontsource-variable/montserrat` и `@fontsource-variable/manrope` установлены в `apps/web`. ADR 0010 записан.
+- Оговорки: регистрации в воронке считаются по `signup_attribution` (удалённый аккаунт из счёта уходит); запись листа ожидания при удалении аккаунта не стирается, стирает админ.

@@ -10,8 +10,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Lang } from '@sportpit/shared/i18n';
 import type { ConsentKind, ConsentState } from '@sportpit/shared/schemas/auth';
+import type { Attribution } from '@sportpit/shared/schemas/growth';
 import type { Role } from '@sportpit/shared/types';
 import type { AppDeps } from '../../app.ts';
+import { recordSignup } from '../growth/index.ts';
 import { AppError, errors } from '../system/errors.ts';
 import { consentStates, hasConsent, recordConsents } from './consents.ts';
 import { createOtpService } from './otp.ts';
@@ -43,11 +45,15 @@ export interface AuthApi {
     phone: string,
     lang?: Lang,
   ): Promise<{ retryAfterSeconds: number; expiresInSeconds: number }>;
-  /** Проверяет код, создаёт пользователя-клиента при первом входе и открывает сессию. */
+  /**
+   * Проверяет код, создаёт пользователя-клиента при первом входе и открывает сессию.
+   * Источник привлечения (`attribution`) учитывается только для нового пользователя, в той же транзакции.
+   */
   verifyOtp(
     phone: string,
     code: string,
     lang?: Lang,
+    attribution?: Attribution,
   ): { user: AuthUser; token: string; expiresAt: string };
   /** Закрывает сессию по токену из cookie. */
   logout(token: string | undefined): void;
@@ -92,11 +98,15 @@ export function authFor(deps: AuthDeps): AuthApi {
 
   const api: AuthApi = {
     requestOtp: (phone, lang = 'ru') => otp.request(phone, lang),
-    verifyOtp(phone, code, lang) {
+    verifyOtp(phone, code, lang, attribution) {
       otp.check(phone, code);
       const user = db.tx((tx) => {
         const existing = findUserByPhone(tx, phone);
-        const found = existing ?? createUser(tx, clock, { phone, ...(lang ? { lang } : {}) });
+        let found = existing;
+        if (!found) {
+          found = createUser(tx, clock, { phone, ...(lang ? { lang } : {}) });
+          recordSignup(tx, clock, found.id, attribution);
+        }
         if (existing && lang) setUserLang(tx, existing.id, lang);
         touchLogin(tx, clock, found.id);
         return findUserById(tx, found.id)!;
