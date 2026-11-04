@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прототип лендинга (не для продакшена)</title>
+<!-- Прототип только для обсуждения вида. Шрифты подгружаются с Google Fonts ТОЛЬКО для превью; в продакшене шрифты свои, локальные.
+     Названия блюд, цифры и тексты FAQ — условные примеры, настоящие берутся из системы. Знак — временная заглушка. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&family=Montserrat:wght@700;800&display=swap&subset=cyrillic,latin-ext" rel="stylesheet">
+<style>/* токены продублированы из tokens.css, чтобы файл открывался один */
+/*
+ * Токены лендинга. Источник правды — DESIGN.md рядом; при расхождении прав DESIGN.md.
+ * Префикс --lp- нарочно отличается от --color-* приложения (apps/web/src/ui/styles.css),
+ * чтобы лендинг и приложение не перебивали друг друга. Подключать только на странице лендинга.
+ * Палитра фиксированная: лендинг не следует за prefers-color-scheme и за темой приложения.
+ */
+
+.lp {
+  /* Цвета бренда (зеркало BRAND.md) */
+  --lp-primary: #26301f; /* Лес */
+  --lp-secondary: #5a1230; /* Бордо */
+  --lp-neutral: #f4eadf; /* Крем */
+  --lp-tertiary: #d7f06b; /* Лайм */
+
+  /* Производные */
+  --lp-surface: #fbf6ee;
+  --lp-forest-raised: #323e2a;
+  --lp-muted: #5b6552;
+  --lp-muted-on-dark: #b9c2ae;
+  --lp-line: #d9cdbd;
+  --lp-error: #a3231b;
+
+  /* Шрифты: поставляются сайтом локально (subset: кириллица, латиница, ă â î ș ț) */
+  --lp-font-display: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --lp-font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Шкала шрифтов: мобильный размер, от 768px растёт (см. @media ниже) */
+  --lp-fs-display: 2.5rem;
+  --lp-fs-headline-lg: 1.75rem;
+  --lp-fs-headline-md: 1.25rem;
+  --lp-fs-body-lg: 1.125rem;
+  --lp-fs-body-md: 1rem;
+  --lp-fs-label: 0.8125rem;
+  --lp-fs-figure: 1.5rem;
+
+  /* Отступы и сетка */
+  --lp-space-xs: 4px;
+  --lp-space-sm: 8px;
+  --lp-space-md: 16px;
+  --lp-space-lg: 24px;
+  --lp-space-xl: 40px;
+  --lp-section: 72px;
+  --lp-container: 1120px;
+  --lp-gutter: 20px;
+  --lp-tap: 44px;
+
+  /* Скругления */
+  --lp-radius-sm: 12px;
+  --lp-radius-md: 20px;
+  --lp-radius-lg: 28px;
+  --lp-radius-pill: 999px;
+}
+
+@media (min-width: 768px) {
+  .lp {
+    --lp-fs-display: 4rem;
+    --lp-fs-headline-lg: 2.5rem;
+    --lp-section: 112px;
+  }
+}
+</style>
+<style>
+*{box-sizing:border-box;margin:0}
+body{margin:0;background:var(--lp-neutral)}
+.lp{font-family:var(--lp-font-body);font-size:var(--lp-fs-body-md);line-height:1.6;color:var(--lp-primary);-webkit-font-smoothing:antialiased}
+.lp img,.lp svg{display:block;max-width:100%}
+.lp a:not(.btn){color:inherit}
+.wrap{max-width:var(--lp-container);margin:0 auto;padding:0 var(--lp-gutter)}
+.sec{padding:var(--lp-section) 0}
+.dark{background:var(--lp-primary);color:var(--lp-neutral)}
+.cream{background:var(--lp-neutral);color:var(--lp-primary)}
+.wine{background:var(--lp-secondary);color:var(--lp-neutral)}
+.label{font-size:var(--lp-fs-label);font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:1.2}
+.dark .label{color:var(--lp-tertiary)}
+.cream .label{color:var(--lp-secondary)}
+h1,h2,h3{font-family:var(--lp-font-display);margin:0}
+h1{font-size:var(--lp-fs-display);font-weight:800;line-height:1.05;letter-spacing:-.01em;text-transform:uppercase}
+h2{font-size:var(--lp-fs-headline-lg);font-weight:800;line-height:1.12;text-transform:uppercase}
+h3{font-size:var(--lp-fs-headline-md);font-weight:700;line-height:1.25}
+.lead{font-size:var(--lp-fs-body-lg);font-weight:500;line-height:1.55;max-width:34rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:var(--lp-tap);padding:0 24px;border-radius:var(--lp-radius-pill);font:700 1rem/1.2 var(--lp-font-body);text-decoration:none;border:1.5px solid transparent;cursor:pointer}
+.btn-primary{background:var(--lp-secondary);color:var(--lp-neutral)}
+.btn-primary:hover{background:#6b1839}
+.btn-lime{background:var(--lp-tertiary);color:var(--lp-primary)}
+.btn-lime:hover{background:#e4f78a}
+.btn-ghost{background:transparent;color:inherit;border-color:currentColor}
+.btn:focus-visible,.field:focus-visible,summary:focus-visible{outline:3px solid var(--lp-secondary);outline-offset:2px}
+.dark .btn:focus-visible,.wine .btn:focus-visible{outline-color:var(--lp-tertiary)}
+header{position:sticky;top:0;z-index:5;background:var(--lp-primary);color:var(--lp-neutral);border-bottom:1px solid transparent}
+header .wrap{display:flex;align-items:center;gap:16px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font:800 1.0625rem/1 var(--lp-font-display);text-decoration:none}
+.brand svg{width:32px;height:32px}
+.spacer{flex:1}
+nav.links{display:none;gap:24px}
+nav.links a{text-decoration:none}
+.lang{display:flex;gap:2px;background:var(--lp-forest-raised);padding:3px;border-radius:var(--lp-radius-pill)}
+.lang button{border:0;background:transparent;color:var(--lp-muted-on-dark);font:700 .8125rem/1 var(--lp-font-body);padding:9px 11px;border-radius:var(--lp-radius-pill);min-height:var(--lp-tap);min-width:var(--lp-tap);cursor:pointer}
+.lang button[aria-pressed=true]{background:var(--lp-neutral);color:var(--lp-primary)}
+header .btn{min-height:44px;padding:0 18px}
+.hero{display:grid;gap:32px;align-items:center}
+.hero .copy{display:grid;gap:20px;justify-items:start}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.perks{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;list-style:none;padding:0}
+.perks li{display:flex;align-items:center;gap:10px;font-size:.875rem;line-height:1.3;color:var(--lp-muted-on-dark)}
+.perks svg{width:28px;height:28px;flex:none;stroke:var(--lp-tertiary);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.photo{position:relative;border-radius:var(--lp-radius-lg);overflow:hidden;min-height:320px;background:
+ radial-gradient(60% 55% at 50% 52%,#3a2a24 0 38%,transparent 39%),
+ linear-gradient(135deg,#5a1230,#2b0d1b)}
+.photo .ph{position:absolute;left:16px;bottom:16px;right:16px;font-size:.75rem;color:var(--lp-muted-on-dark);border:1px dashed rgba(244,234,223,.45);border-radius:var(--lp-radius-sm);padding:6px 10px;width:max-content;max-width:calc(100% - 140px)}
+.macro{position:absolute;right:14px;top:14px;width:112px;border-radius:var(--lp-radius-md);padding:12px 14px;background:rgba(50,62,42,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--lp-neutral)}
+.macro div{padding:8px 0;border-top:1px solid rgba(244,234,223,.18);text-align:center}
+.macro div:first-child{border-top:0}
+.macro b{display:block;font:700 var(--lp-fs-figure)/1.1 var(--lp-font-display);font-variant-numeric:tabular-nums}
+.macro div:first-child b{color:var(--lp-tertiary)}
+.macro span{font-size:.6875rem;letter-spacing:.06em;text-transform:uppercase;color:var(--lp-muted-on-dark)}
+.head{display:grid;gap:12px;margin-bottom:32px}
+.steps{display:grid;gap:16px;list-style:none;padding:0;counter-reset:s}
+.steps li{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+.steps .n{font:800 2rem/1 var(--lp-font-display);color:var(--lp-secondary);min-width:2.2rem}
+.steps p{color:var(--lp-muted);margin-top:4px}
+.cards{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0 12px;margin:0 calc(var(--lp-gutter) * -1);padding-left:var(--lp-gutter);padding-right:var(--lp-gutter)}
+.card{flex:0 0 78%;max-width:300px;scroll-snap-align:start;background:var(--lp-surface);border:1px solid var(--lp-line);border-radius:var(--lp-radius-md);padding:16px;display:grid;gap:12px}
+.card .pic{height:140px;border-radius:var(--lp-radius-sm);background:linear-gradient(135deg,#d9cdbd,#c9b9a4);display:grid;place-items:end start;padding:10px;font-size:.75rem;color:var(--lp-muted)}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center}
+.nums b{display:block;font:700 1rem/1.1 var(--lp-font-display);font-variant-numeric:tabular-nums}
+.nums span{font-size:.6875rem;color:var(--lp-muted);text-transform:uppercase;letter-spacing:.05em}
+.nums div:first-child b{color:var(--lp-secondary)}
+.packs{display:grid;gap:16px}
+.pack{background:var(--lp-surface);border:1px solid var(--lp-line);border-radius:var(--lp-radius-md);padding:20px;display:grid;gap:8px}
+.pack b{font:700 var(--lp-fs-figure)/1.1 var(--lp-font-display)}
+.pack small{color:var(--lp-muted)}
+.band{display:grid;gap:20px;background:var(--lp-secondary);color:var(--lp-neutral);border-radius:var(--lp-radius-lg);padding:32px 28px;align-items:center}
+.band h2{max-width:22ch}
+.arrow{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--lp-neutral);display:grid;place-items:center;text-decoration:none;font-size:1.5rem}
+.calc{display:grid;gap:16px;justify-items:start}
+.small{font-size:.8125rem;color:var(--lp-muted-on-dark)}
+details{border-top:1px solid var(--lp-line)}
+details:last-of-type{border-bottom:1px solid var(--lp-line)}
+summary{list-style:none;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;font-size:var(--lp-fs-body-lg);font-weight:500;padding:8px 0}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'';width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);flex:none;transition:transform .25s}
+details[open] summary::after{transform:rotate(-135deg)}
+details p{color:var(--lp-muted);padding:0 0 16px;max-width:40rem}
+.form{background:var(--lp-surface);color:var(--lp-primary);border-radius:var(--lp-radius-lg);padding:24px;display:grid;gap:16px;max-width:520px}
+.form label{display:grid;gap:6px;font-weight:700;font-size:.875rem}
+.field{height:52px;border:1.5px solid var(--lp-line);border-radius:var(--lp-radius-sm);padding:0 14px;background:var(--lp-surface);font:400 1rem var(--lp-font-body);color:var(--lp-primary)}
+.consent{display:flex;gap:10px;align-items:flex-start;font-weight:400!important;font-size:.8125rem!important;color:var(--lp-muted)}
+.consent input{width:22px;height:22px;margin-top:1px;accent-color:var(--lp-secondary)}
+.split{display:grid;gap:32px}
+footer{padding:48px 0;background:var(--lp-primary);color:var(--lp-neutral)}
+footer .wrap{display:grid;gap:16px}
+footer .small a{color:var(--lp-muted-on-dark)}
+@media(min-width:768px){
+ nav.links{display:flex}
+ .hero{grid-template-columns:1.05fr .95fr;gap:48px}
+ .photo{min-height:460px}
+ .perks{grid-template-columns:repeat(4,1fr);margin-top:40px;grid-column:1/-1}
+ .steps{grid-template-columns:repeat(4,1fr)}
+ .steps li{grid-template-columns:1fr}
+ .cards{margin:0;padding:0;overflow:visible;display:grid;grid-template-columns:repeat(4,1fr)}
+ .card{flex:none;max-width:none}
+ .packs{grid-template-columns:repeat(3,1fr)}
+ .band{grid-template-columns:1fr auto;padding:44px}
+ .split{grid-template-columns:1fr 1fr;align-items:center}
+}
+@media (prefers-reduced-motion:reduce){summary::after{transition:none}}
+</style>
+</head>
+<body>
+<div class="lp">
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top"><svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#F4EADF" d="M32 58C19 49 6 39 6 24C6 14 13 7 21 7C26 7 30 10 32 14V58Z"/><path fill="#D7F06B" d="M32 58C45 49 58 39 58 24C58 14 51 7 43 7C38 7 34 10 32 14V58Z"/></svg><span data-i="brand">Название</span></a>
+    <nav class="links label"><a href="#how" data-i="n1">Как это работает</a><a href="#boxes" data-i="n2">Боксы</a><a href="#faq" data-i="n3">Вопросы</a></nav>
+    <span class="spacer"></span>
+    <div class="lang" role="group" aria-label="Язык"><button aria-pressed="true" data-lang="ru">RU</button><button aria-pressed="false" data-lang="ro">RO</button></div>
+    <a class="btn btn-lime" href="#join" data-i="join">Записаться</a>
+  </div>
+</header>
+
+<main id="top">
+<section class="sec dark" style="padding-top:40px">
+  <div class="wrap hero">
+    <div class="copy">
+      <span class="label" data-i="eyebrow">Любовь к себе — это действия</span>
+      <h1 data-i="h1">Люби себя делом</h1>
+      <p class="lead" data-i="lead">Готовые боксы с точными цифрами в холодильнике твоего зала. Мы посчитали, ты просто ешь.</p>
+      <div class="cta"><a class="btn btn-lime" href="#join" data-i="cta1">Записаться в лист ожидания</a><a class="btn btn-ghost" href="#calc" data-i="cta2">Рассчитать норму</a></div>
+    </div>
+    <div class="photo" aria-label="Место под фото бокса">
+      <div class="macro" aria-label="КБЖУ (пример)"><div><b>520</b><span data-i="kcal">ккал</span></div><div><b>42</b><span data-i="prot">белки</span></div><div><b>56</b><span data-i="carb">углев.</span></div><div><b>14</b><span data-i="fat">жиры</span></div></div>
+      <span class="ph" data-i="ph">Место под реальное фото бокса</span>
+    </div>
+    <ul class="perks">
+      <li><svg viewBox="0 0 28 28"><path d="M6 22c0-9 5-15 16-16 0 9-5 15-16 16zM6 22l9-9"/></svg><span data-i="p1">Точные цифры на каждом боксе</span></li>
+      <li><svg viewBox="0 0 28 28"><rect x="5" y="4" width="18" height="20" rx="3"/><path d="M5 12h18M12 8v-.01"/></svg><span data-i="p2">Холодильник в твоём зале</span></li>
+      <li><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="9"/><path d="M14 8v6l4 2"/></svg><span data-i="p3">Заказ накануне, свежее</span></li>
+      <li><svg viewBox="0 0 28 28"><path d="M5 9h18v12H5zM5 9l9-5 9 5"/></svg><span data-i="p4">Пакеты, а не подписка на день</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="sec cream" id="how">
+  <div class="wrap">
+    <div class="head"><span class="label" data-i="how_l">Как это работает</span><h2 data-i="how_h">Четыре шага. Счёт — на нас.</h2></div>
+    <ol class="steps">
+      <li><span class="n">1</span><div><h3 data-i="s1">Выбери боксы</h3><p data-i="s1p">Из меню на завтра и позже, до вечера накануне.</p></div></li>
+      <li><span class="n">2</span><div><h3 data-i="s2">Оплати пакет</h3><p data-i="s2p">Берёшь столько боксов, сколько нужно тебе.</p></div></li>
+      <li><span class="n">3</span><div><h3 data-i="s3">Забери в зале</h3><p data-i="s3p">В холодильнике по коду, по пути с тренировки.</p></div></li>
+      <li><span class="n">4</span><div><h3 data-i="s4">Ешь и живи</h3><p data-i="s4p">Цифры уже посчитаны, ты знаешь, что в себя вкладываешь.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="sec cream" id="boxes" style="padding-top:0">
+  <div class="wrap">
+    <div class="head"><span class="label" data-i="b_l">Боксы</span><h2 data-i="b_h">Выбери то, что тебе нужно</h2></div>
+    <div class="cards">
+      <article class="card"><div class="pic"><span data-i="ph">Место под реальное фото бокса</span></div><h3>Блюдо-пример 1</h3><div class="nums"><div><b>520</b><span data-i="kcal">ккал</span></div><div><b>42</b><span data-i="prot">белки</span></div><div><b>56</b><span data-i="carb">углев.</span></div><div><b>14</b><span data-i="fat">жиры</span></div></div></article>
+      <article class="card"><div class="pic"><span data-i="ph">Место под реальное фото бокса</span></div><h3>Блюдо-пример 2</h3><div class="nums"><div><b>498</b><span data-i="kcal">ккал</span></div><div><b>45</b><span data-i="prot">белки</span></div><div><b>50</b><span data-i="carb">углев.</span></div><div><b>16</b><span data-i="fat">жиры</span></div></div></article>
+      <article class="card"><div class="pic"><span data-i="ph">Место под реальное фото бокса</span></div><h3>Блюдо-пример 3</h3><div class="nums"><div><b>488</b><span data-i="kcal">ккал</span></div><div><b>39</b><span data-i="prot">белки</span></div><div><b>46</b><span data-i="carb">углев.</span></div><div><b>16</b><span data-i="fat">жиры</span></div></div></article>
+      <article class="card"><div class="pic"><span data-i="ph">Место под реальное фото бокса</span></div><h3>Блюдо-пример 4</h3><div class="nums"><div><b>512</b><span data-i="kcal">ккал</span></div><div><b>44</b><span data-i="prot">белки</span></div><div><b>52</b><span data-i="carb">углев.</span></div><div><b>15</b><span data-i="fat">жиры</span></div></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="sec cream" style="padding-top:0">
+  <div class="wrap">
+    <div class="head"><span class="label" data-i="pk_l">Пакеты</span><h2 data-i="pk_h">Платишь за боксы, а не за подписку</h2></div>
+    <div class="packs">
+      <div class="pack"><span class="label" data-i="pk1">Пакет 10</span><b>ХХ lei</b><small data-i="pk_s">Цена из системы</small></div>
+      <div class="pack"><span class="label" data-i="pk2">Пакет 20</span><b>ХХ lei</b><small data-i="pk_s">Цена из системы</small></div>
+      <div class="pack"><span class="label" data-i="pk3">Пакет 30</span><b>ХХ lei</b><small data-i="pk_s">Цена из системы</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec cream" style="padding-top:0;padding-bottom:var(--lp-section)">
+  <div class="wrap"><div class="band"><h2 data-i="band">Что ты в себя вкладываешь, видно снаружи</h2><a class="arrow" href="#join" aria-label="Записаться">→</a></div></div>
+</section>
+
+<section class="sec dark" id="calc">
+  <div class="wrap split">
+    <div class="calc">
+      <span class="label" data-i="c_l">Калькулятор нормы</span>
+      <h2 data-i="c_h">Узнай свои цифры</h2>
+      <p class="lead" data-i="c_p">Две минуты, без регистрации. Покажем ориентир на день.</p>
+      <a class="btn btn-lime" href="#" data-i="c_b">Рассчитать</a>
+      <p class="small" data-i="c_s">Ориентировочно, не медицинская рекомендация.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec cream" id="faq">
+  <div class="wrap">
+    <div class="head"><span class="label" data-i="f_l">Вопросы и ответы</span><h2 data-i="f_h">Коротко о главном</h2></div>
+    <details><summary data-i="q1">Как заказать бокс?</summary><p data-i="a_ph">Текст ответа — после согласования.</p></details>
+    <details><summary data-i="q2">Откуда берутся цифры КБЖУ?</summary><p data-i="a_ph">Текст ответа — после согласования.</p></details>
+    <details><summary data-i="q3">Это медицинская рекомендация?</summary><p data-i="a_ph">Текст ответа — после согласования.</p></details>
+    <details><summary data-i="q4">Что если я не успел забрать?</summary><p data-i="a_ph">Текст ответа — после согласования.</p></details>
+  </div>
+</section>
+
+<section class="sec wine" id="join">
+  <div class="wrap split">
+    <div style="display:grid;gap:16px">
+      <span class="label" style="color:var(--lp-tertiary)" data-i="j_l">Лист ожидания</span>
+      <h2 data-i="j_h">Будь первым в своём зале</h2>
+      <p class="lead" data-i="j_p">Оставь телефон: напишем, когда в твоём зале появится холодильник.</p>
+    </div>
+    <form class="form" onsubmit="return false">
+      <label><span data-i="f1">Телефон</span><input class="field" type="tel" placeholder="+373" inputmode="tel" autocomplete="tel"></label>
+      <label><span data-i="f2">Имя (необязательно)</span><input class="field" type="text" autocomplete="given-name"></label>
+      <label><span data-i="f3">Зал или район</span><input class="field" type="text"></label>
+      <label class="consent"><input type="checkbox"><span data-i="f4">Согласен на обработку данных [текст согласия — юристом]</span></label>
+      <button class="btn btn-primary" data-i="f5">Записаться</button>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top"><svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#F4EADF" d="M32 58C19 49 6 39 6 24C6 14 13 7 21 7C26 7 30 10 32 14V58Z"/><path fill="#D7F06B" d="M32 58C45 49 58 39 58 24C58 14 51 7 43 7C38 7 34 10 32 14V58Z"/></svg><span data-i="brand">Название</span></a>
+    <p class="small"><a href="#" data-i="ft1">Telegram</a> · <a href="#" data-i="ft2">Instagram</a> · <a href="#" data-i="ft3">Политика и согласия</a></p>
+    <p class="small" data-i="ft4">Лендинг не даёт медицинских рекомендаций.</p>
+  </div>
+</footer>
+</div>
+
+<script>
+const RO={brand:'Nume',n1:'Cum funcționează',n2:'Boxuri',n3:'Întrebări',join:'Înscrie-te',eyebrow:'Iubirea de sine înseamnă fapte',h1:'Iubește-te prin fapte',lead:'Boxuri gata făcute, cu cifre exacte, în frigiderul sălii tale. Noi am numărat, tu doar mănânci.',cta1:'Înscrie-te pe lista de așteptare',cta2:'Calculează-ți norma',kcal:'kcal',prot:'proteine',carb:'carbohidr.',fat:'grăsimi',ph:'Loc pentru fotografia reală a boxului',p1:'Cifre exacte pe fiecare box',p2:'Frigider în sala ta',p3:'Comandă din ajun, proaspăt',p4:'Pachete, nu abonament pe zi',how_l:'Cum funcționează',how_h:'Patru pași. Calculul e treaba noastră.',s1:'Alege boxurile',s1p:'Din meniul pentru mâine și mai departe, până seara din ajun.',s2:'Plătește pachetul',s2p:'Iei câte boxuri îți trebuie.',s3:'Ridică-l din sală',s3p:'Din frigider, cu cod, pe drumul de la antrenament.',s4:'Mănâncă și trăiește',s4p:'Cifrele sunt deja calculate, știi ce pui în tine.',b_l:'Boxuri',b_h:'Alege ce ai nevoie',pk_l:'Pachete',pk_h:'Plătești pentru boxuri, nu pentru abonament',pk1:'Pachet 10',pk2:'Pachet 20',pk3:'Pachet 30',pk_s:'Prețul din sistem',band:'Ce pui în tine, se vede pe tine',c_l:'Calculator de normă',c_h:'Află-ți cifrele',c_p:'Două minute, fără înregistrare. Îți arătăm o orientare pe zi.',c_b:'Calculează',c_s:'Orientativ, nu este o recomandare medicală.',f_l:'Întrebări și răspunsuri',f_h:'Pe scurt, despre esențial',q1:'Cum comand un box?',q2:'De unde vin cifrele de nutrienți?',q3:'Este o recomandare medicală?',q4:'Ce se întâmplă dacă nu am apucat să-l ridic?',a_ph:'Textul răspunsului — după aprobare.',j_l:'Lista de așteptare',j_h:'Fii primul din sala ta',j_p:'Lasă telefonul: îți scriem când apare frigiderul în sala ta.',f1:'Telefon',f2:'Nume (opțional)',f3:'Sală sau cartier',f4:'Sunt de acord cu prelucrarea datelor [textul acordului — de jurist]',f5:'Înscrie-te',ft1:'Telegram',ft2:'Instagram',ft3:'Politică și acorduri',ft4:'Pagina nu oferă recomandări medicale.'};
+const RU={};
+document.querySelectorAll('[data-i]').forEach(e=>{RU[e.dataset.i]??=e.textContent});
+document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{
+  const l=b.dataset.lang;document.documentElement.lang=l;
+  document.querySelectorAll('[data-lang]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  document.querySelectorAll('[data-i]').forEach(e=>{const t=(l==='ro'?RO:RU)[e.dataset.i];if(t!==undefined)e.textContent=t});
+}));
+</script>
+</body>
+</html>

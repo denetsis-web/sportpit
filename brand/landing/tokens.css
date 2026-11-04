@@ -1,0 +1,60 @@
+/*
+ * Токены лендинга. Источник правды — DESIGN.md рядом; при расхождении прав DESIGN.md.
+ * Префикс --lp- нарочно отличается от --color-* приложения (apps/web/src/ui/styles.css),
+ * чтобы лендинг и приложение не перебивали друг друга. Подключать только на странице лендинга.
+ * Палитра фиксированная: лендинг не следует за prefers-color-scheme и за темой приложения.
+ */
+
+.lp {
+  /* Цвета бренда (зеркало BRAND.md) */
+  --lp-primary: #26301f; /* Лес */
+  --lp-secondary: #5a1230; /* Бордо */
+  --lp-neutral: #f4eadf; /* Крем */
+  --lp-tertiary: #d7f06b; /* Лайм */
+
+  /* Производные */
+  --lp-surface: #fbf6ee;
+  --lp-forest-raised: #323e2a;
+  --lp-muted: #5b6552;
+  --lp-muted-on-dark: #b9c2ae;
+  --lp-line: #d9cdbd;
+  --lp-error: #a3231b;
+
+  /* Шрифты: поставляются сайтом локально (subset: кириллица, латиница, ă â î ș ț) */
+  --lp-font-display: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --lp-font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Шкала шрифтов: мобильный размер, от 768px растёт (см. @media ниже) */
+  --lp-fs-display: 2.5rem;
+  --lp-fs-headline-lg: 1.75rem;
+  --lp-fs-headline-md: 1.25rem;
+  --lp-fs-body-lg: 1.125rem;
+  --lp-fs-body-md: 1rem;
+  --lp-fs-label: 0.8125rem;
+  --lp-fs-figure: 1.5rem;
+
+  /* Отступы и сетка */
+  --lp-space-xs: 4px;
+  --lp-space-sm: 8px;
+  --lp-space-md: 16px;
+  --lp-space-lg: 24px;
+  --lp-space-xl: 40px;
+  --lp-section: 72px;
+  --lp-container: 1120px;
+  --lp-gutter: 20px;
+  --lp-tap: 44px;
+
+  /* Скругления */
+  --lp-radius-sm: 12px;
+  --lp-radius-md: 20px;
+  --lp-radius-lg: 28px;
+  --lp-radius-pill: 999px;
+}
+
+@media (min-width: 768px) {
+  .lp {
+    --lp-fs-display: 4rem;
+    --lp-fs-headline-lg: 2.5rem;
+    --lp-section: 112px;
+  }
+}

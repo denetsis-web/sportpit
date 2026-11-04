@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Знак (временный)">
+  <path fill="#26301F" d="M32 58C19 49 6 39 6 24C6 14 13 7 21 7C26 7 30 10 32 14V58Z"/>
+  <path fill="#5A1230" d="M32 58C45 49 58 39 58 24C58 14 51 7 43 7C38 7 34 10 32 14V58Z"/>
+  <path fill="none" stroke="#F4EADF" stroke-width="2" stroke-linecap="round" d="M32 54C28 44 24 36 20 30"/>
+</svg>
