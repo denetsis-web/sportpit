@@ -93,4 +93,8 @@ Node ≥ 22.13 (локально 24), ESM, TypeScript strict; Fastify 5, `node:s
 - Словарь `growth` (готов для таска 03): `nav.waitlist`, `nav.funnel`, `waitlist.*`, `funnel.*`, `goal.*`, `lang.*`, `source.*`, `csv.*`, `error.*`.
 - Лимит входа по IP: `LOGIN_IP_RATE_MAX = 60` в `system/index.ts` (`LOGIN_RATE_MAX = 10` остался для смены телефона).
 - Шрифты `@fontsource-variable/montserrat` и `@fontsource-variable/manrope` установлены в `apps/web`. ADR 0010 записан.
-- Оговорки: регистрации в воронке считаются по `signup_attribution` (удалённый аккаунт из счёта уходит); запись листа ожидания при удалении аккаунта не стирается, стирает админ.
+### T03 — админка листа ожидания и воронки
+
+- `features/admin/growth/routes.tsx`: `routes` (`admin/waitlist`, `admin/funnel`), `nav` (`growth.nav.waitlist` order 70, `growth.nav.funnel` order 71, `roles: ['admin']`); `api.ts`: `fetchWaitlist`, `deleteWaitlistEntry`, `waitlistCsvUrl(filters, labels)`, `fetchFunnel`. Доли перехода считаются по событиям и могут быть больше 100 %.
+
+- Оговорки T01: регистрации в воронке считаются по `signup_attribution` (удалённый аккаунт из счёта уходит); запись листа ожидания при удалении аккаунта не стирается, стирает админ.

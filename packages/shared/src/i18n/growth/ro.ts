@@ -84,6 +84,7 @@ const ro: DictionaryOf<typeof ru> = {
 
   // ---- ștergerea unei înregistrări ----
   'waitlist.delete': 'Șterge',
+  'waitlist.delete.row': 'Șterge înregistrarea {phone}',
   'waitlist.delete.title': 'Ștergi înregistrarea?',
   'waitlist.delete.text':
     'Înregistrarea {phone} va fi ștearsă fără posibilitate de recuperare. Acțiunea va fi trecută în jurnalul acțiunilor administratorului.',
