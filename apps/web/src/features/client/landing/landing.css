@@ -93,7 +93,8 @@
   list-style: none;
 }
 
-.lp a {
+/* :where даёт нулевую специфичность: класс кнопки (.lp-btn--lime и др.) должен перебивать наследование цвета у ссылки */
+:where(.lp) a {
   color: inherit;
 }
 
@@ -295,8 +296,13 @@
   box-shadow: inset 0 0 0 2px var(--lp-tertiary);
 }
 
+/* У прозрачной кнопки лайм не виден на креме: выбранное состояние — двойная обводка цветом текста */
+.lp-btn--ghost[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
 .lp-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.75;
   cursor: not-allowed;
 }
 
@@ -860,6 +866,49 @@
   min-height: var(--lp-tap);
   padding-inline: var(--lp-space-sm);
   font-weight: 700;
+}
+
+/* Телефон: плашка компактная (не выше ~35% экрана), кнопки и ссылка в одну строку, цели нажатия по-прежнему 44 px */
+@media (max-width: 480px) {
+  .lp-consent {
+    left: var(--lp-space-sm);
+    right: var(--lp-space-sm);
+    bottom: var(--lp-space-sm);
+    padding: 12px;
+    border-radius: var(--lp-radius-sm);
+  }
+
+  .lp-consent__title {
+    font-size: 0.875rem;
+    line-height: 1.25;
+    margin-bottom: 2px;
+  }
+
+  .lp-consent__text {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    margin-bottom: var(--lp-space-sm);
+  }
+
+  .lp-consent__actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .lp-consent__actions .lp-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--lp-tap);
+    padding: 8px 10px;
+    font-size: 0.8125rem;
+  }
+
+  .lp-consent__more {
+    flex: none;
+    padding-inline: 6px;
+    font-size: 0.8125rem;
+    text-decoration: underline;
+  }
 }
 
 /* ---- страница «Политика и согласия» ---- */
