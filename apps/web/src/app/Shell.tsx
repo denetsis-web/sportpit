@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useShowLanding } from '../features/client/landing/useShowLanding.ts';
 import { NotificationsBell } from '../features/client/notifications/Bell.tsx';
 import { OfflineBanner } from './connectivity.tsx';
 import { useT } from './i18n.tsx';
@@ -8,9 +9,21 @@ import { LanguageChoiceDialog, LanguageSwitcher } from './LanguageSwitcher.tsx';
 import type { NavItem } from './routes.tsx';
 import { ThemeToggle } from './theme.tsx';
 
-/** Оболочка: шапка (язык, тема), баннер «Нет связи», содержимое, подсказка установки, нижнее меню функций. */
+/**
+ * Оболочка: шапка (язык, тема), баннер «Нет связи», содержимое, подсказка установки, нижнее меню функций.
+ * На адресах лендинга (гостю в браузере или пока проверяется вход) рисуется только содержимое:
+ * у лендинга своя шапка и подвал, а окно выбора языка закрыло бы первый экран.
+ */
 export function Shell({ nav }: { nav: NavItem[] }) {
   const t = useT();
+  const { showLanding, pending } = useShowLanding();
+  if (showLanding || pending) {
+    return (
+      <Suspense fallback={<p role="status">{t('core.loading')}</p>}>
+        <Outlet />
+      </Suspense>
+    );
+  }
   return (
     <div className="shell">
       <a className="skip-link" href="#main">

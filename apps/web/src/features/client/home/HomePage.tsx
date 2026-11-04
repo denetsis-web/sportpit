@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useT } from '../../../app/i18n.tsx';
 import { Card } from '../../../ui/index.ts';
 import { useSession } from '../auth/session.ts';
+import { HomeGate } from '../landing/LandingGate.tsx';
 import './home.css';
 
 interface Section {
@@ -34,8 +35,8 @@ const ADMIN_SECTION: Section = {
   hintKey: 'core.home.admin',
 };
 
-/** Главная: приветствие и ссылки на разделы. Гость видит вход и меню, вошедший — все свои разделы. */
-export function HomePage() {
+/** Главная приложения: приветствие и ссылки на разделы. Гость видит вход и меню, вошедший — все свои разделы. */
+function AppHome() {
   const t = useT();
   const { status, user } = useSession();
   const sections = !user
@@ -70,4 +71,9 @@ export function HomePage() {
       )}
     </>
   );
+}
+
+/** Главная (корень сайта): гость в браузере видит лендинг, вошедший и гость в установленном приложении — главную приложения. */
+export function HomePage() {
+  return <HomeGate app={<AppHome />} />;
 }

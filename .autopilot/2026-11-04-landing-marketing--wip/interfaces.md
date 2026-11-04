@@ -97,4 +97,12 @@ Node ≥ 22.13 (локально 24), ESM, TypeScript strict; Fastify 5, `node:s
 
 - `features/admin/growth/routes.tsx`: `routes` (`admin/waitlist`, `admin/funnel`), `nav` (`growth.nav.waitlist` order 70, `growth.nav.funnel` order 71, `roles: ['admin']`); `api.ts`: `fetchWaitlist`, `deleteWaitlistEntry`, `waitlistCsvUrl(filters, labels)`, `fetchFunnel`. Доли перехода считаются по событиям и могут быть больше 100 %.
 
+### T02 — лендинг
+
+- `features/client/landing/`: `useShowLanding(): {showLanding, pending}`; `parseLandingPath(pathname)`, `landingPath(kind, lang)`; ленивые входы `HomeGate`/`RoGate`/`LegalGate` (`LandingGate.tsx`); обёртки `<section id="calc"|"join" tabIndex={-1} aria-labelledby="lp-calc-title"|"lp-join-title">` лежат в `LandingEntry`, а `calculator/CalculatorSection.tsx` и `join/JoinSection.tsx` (default-экспорты) рисуют label/h2 (id заголовка)/текст — их заменяет таск 04, сохраняя id заголовков.
+- `tracker.ts`: `captureAttribution(url, stores?)`, `getAttribution()`, `getSignupAttribution()`, `getAnalyticsConsent()`, `setAnalyticsConsent('yes'|'no')`, `subscribeConsent`, `track(kind): Promise<void>`, `trackLandingView(path)`; ключи `sportpit.aid`, `sportpit.analytics`, `sportpit.src` (local+session), `sportpit.lv` (session). `api.ts`: `joinWaitlist(WaitlistJoin)`, `sendTrack(kind, attribution)`. Хелперы: `scrollToSection(id)`, `httpsLink`, `MacroCard`.
+- Словарь `landing` (`packages/shared/src/i18n/landing/{ru,ro}.ts`): `meta.title/description` и `meta.legal.*`, `brand.*`, `links.*`, hero/how/boxes/macro/packs/band/calc/faq, `join.*` (поля, `join.goal.*`, ошибки phone/consent/network/rate/generic, success), `consent.*`, `footer.*`, `legal.*`.
+- `Shell` на адресах лендинга рендерит только `<Outlet/>`, пока вход проверяется и у гостя в браузере; тесты, монтирующие `/` с корневой оболочкой, используют `standalone`. Знаки лежат в `apps/web/public/brand/`. Изменён чужой тест `tests/admin-shell/entry.test.tsx` (3 теста колокольчика ждали шапку у гостя).
+- Заглушки (идут в отчёт): ответы FAQ, ссылки Telegram/Instagram, тексты `/legal` и `join.consent` — `[ВПИШИ]`; румынские тексты вне `copy.md` писал не носитель; вёрстка на 360 px не проверялась глазами; `track` без `keepalive` (клиент `api` его не поддерживает).
+
 - Оговорки T01: регистрации в воронке считаются по `signup_attribution` (удалённый аккаунт из счёта уходит); запись листа ожидания при удалении аккаунта не стирается, стирает админ.

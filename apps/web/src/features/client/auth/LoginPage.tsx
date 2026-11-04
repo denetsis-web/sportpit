@@ -13,6 +13,7 @@ import { useI18n } from '../../../app/i18n.tsx';
 import { Banner, Button, Card, TextField } from '../../../ui/index.ts';
 import './auth.css';
 import { describeError } from './errors.ts';
+import { getSignupAttribution } from '../landing/tracker.ts';
 import { logout, setSessionUser, useSession } from './session.ts';
 
 /** Куда вернуться после входа: только путь внутри приложения. */
@@ -47,6 +48,12 @@ function AccountView() {
 }
 
 type Step = 'phone' | 'code';
+
+/** Источник привлечения для нового пользователя: поле добавляется, только если он известен. */
+function attributionField() {
+  const attribution = getSignupAttribution();
+  return attribution ? { attribution } : {};
+}
 
 function LoginForm() {
   const { t, lang } = useI18n();
@@ -107,7 +114,7 @@ function LoginForm() {
     setBusy(true);
     try {
       const { user } = await api.post('/auth/otp/verify', {
-        body: { phone: clean, code: code.trim(), lang },
+        body: { phone: clean, code: code.trim(), lang, ...attributionField() },
         schema: verifyResponseSchema,
       });
       const next = safeNext(params.get('next'));

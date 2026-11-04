@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { FeatureRoutesModule } from '../../src/app/routes.tsx';
 import { apiError, installFakeApi, user } from '../auth/fakeApi.ts';
 import { adminModules as shellModules, cleanUp, clientModules } from '../auth/render.tsx';
-import { renderApp } from '../helpers.tsx';
+import { renderApp, setMedia } from '../helpers.tsx';
 import { resetNotifications } from '../../src/features/client/notifications/store.ts';
 
 afterEach(() => {
@@ -110,12 +110,13 @@ describe('шапка AdminEntry показывает разделы роли', (
 });
 
 describe('колокольчик в шапке оболочки', () => {
-  const header = () => screen.getByRole('banner');
+  // На / оболочка без шапки, пока проверяется вход (лендинг, таск 02): шапку ждём.
+  const header = () => screen.findByRole('banner');
 
   it('вошедший видит колокольчик со счётчиком непрочитанных', async () => {
     serve('client', 3);
     open('/');
-    const bell = await within(header()).findByRole('link', {
+    const bell = await within(await header()).findByRole('link', {
       name: 'Уведомления, непрочитанных: 3',
     });
     expect(bell.getAttribute('href')).toBe('/notifications');
@@ -123,19 +124,21 @@ describe('колокольчик в шапке оболочки', () => {
   });
 
   it('гость колокольчика не видит', async () => {
+    // гость в установленном приложении: в браузере на / он видит лендинг без шапки
+    setMedia('(display-mode: standalone)', true);
     const api = serve('guest');
     open('/');
     await screen.findByRole('heading', { level: 1, name: 'Добро пожаловать' });
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(within(header()).queryByRole('link', { name: /Уведомления/ })).toBeNull();
+    expect(within(await header()).queryByRole('link', { name: /Уведомления/ })).toBeNull();
     expect(api.callsTo('GET /notifications')).toHaveLength(0);
   });
 
   it('в админке колокольчик есть в той же шапке, ровно один', async () => {
     serve('admin', 2);
     open('/admin');
-    await within(header()).findByRole('link', { name: 'Уведомления, непрочитанных: 2' });
-    expect(within(header()).getAllByRole('link', { name: /Уведомления/ })).toHaveLength(1);
+    await within(await header()).findByRole('link', { name: 'Уведомления, непрочитанных: 2' });
+    expect(within(await header()).getAllByRole('link', { name: /Уведомления/ })).toHaveLength(1);
   });
 
   it('сбой сервера не ломает шапку: колокольчик просто без числа', async () => {
@@ -144,6 +147,6 @@ describe('колокольчик в шапке оболочки', () => {
       'GET /notifications': () => apiError(500, 'internal_error', 'core.error.generic'),
     });
     open('/');
-    expect(await within(header()).findByRole('link', { name: 'Уведомления' })).toBeTruthy();
+    expect(await within(await header()).findByRole('link', { name: 'Уведомления' })).toBeTruthy();
   });
 });

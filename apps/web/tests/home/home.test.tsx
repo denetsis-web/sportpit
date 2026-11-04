@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import { matchRoutes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -8,7 +8,7 @@ import { clientModules as realClientModules } from '../../src/app/modules.ts';
 import { collectFeatures, type FeatureRoutesModule } from '../../src/app/routes.tsx';
 import { adminUser, installFake } from '../admin-catalog/fake.ts';
 import { cleanUp } from '../auth/render.tsx';
-import { renderApp } from '../helpers.tsx';
+import { renderApp, setMedia } from '../helpers.tsx';
 
 // главная страница клиента: вместо заглушки — карточки-ссылки на существующие разделы
 
@@ -18,6 +18,8 @@ const clientModules = import.meta.glob<FeatureRoutesModule>(
 );
 
 afterEach(() => {
+  // сначала снимаем экран: сброс сессии при смонтированной оболочке запустил бы новую проверку входа
+  cleanup();
   cleanUp();
   vi.restoreAllMocks();
 });
@@ -41,8 +43,8 @@ describe('главная страница клиента', () => {
   it('вошедший видит ссылки на меню, пакеты, заказы, получение, трекер, профиль и поддержку', async () => {
     installFake({ 'GET /auth/me': () => ({ body: { user: adminUser('client') } }) });
     renderApp({ initialEntries: ['/'], clientModules, adminModules: {} });
-    await screen.findByRole('link', { name: /Меню/ });
-    const main = screen.getByRole('main');
+    const main = await screen.findByRole('main');
+    await within(main).findByRole('link', { name: /Меню/ });
     const inMain = [...main.querySelectorAll('a')].map((a) => a.getAttribute('href'));
     expect(inMain).toEqual(
       expect.arrayContaining([
@@ -64,8 +66,8 @@ describe('главная страница клиента', () => {
   it('каждая ссылка главной ведёт на существующий маршрут клиента', async () => {
     installFake({ 'GET /auth/me': () => ({ body: { user: adminUser('admin') } }) });
     renderApp({ initialEntries: ['/'], clientModules, adminModules: {} });
-    await screen.findByRole('link', { name: /Меню/ });
-    const main = screen.getByRole('main');
+    const main = await screen.findByRole('main');
+    await within(main).findByRole('link', { name: /Меню/ });
     const targets = [...main.querySelectorAll('a')].map((a) => a.getAttribute('href')!);
     expect(targets.length).toBeGreaterThanOrEqual(7);
     // реальные маршруты проекта; админка живёт под /admin/*
@@ -78,7 +80,9 @@ describe('главная страница клиента', () => {
     expect(targets).toContain('/admin');
   });
 
-  it('гость видит вход и меню, но не личные разделы', async () => {
+  it('гость в установленном приложении видит вход и меню, но не личные разделы', async () => {
+    // в браузере гость видит лендинг (tests/landing); прежняя главная остаётся для установленного приложения
+    setMedia('(display-mode: standalone)', true);
     installFake({ 'GET /auth/me': () => ({ body: { user: null } }) });
     renderApp({ initialEntries: ['/'], clientModules, adminModules: {} });
     await screen.findByRole('link', { name: /^Войти/ });
@@ -96,6 +100,7 @@ describe('главная страница клиента', () => {
   it('на румынском карточки подписаны по-румынски', async () => {
     installFake({ 'GET /auth/me': () => ({ body: { user: adminUser('client') } }) });
     renderApp({ initialEntries: ['/'], clientModules, adminModules: {} }, { lang: 'ro' });
-    expect(await screen.findByRole('link', { name: /Comenzile mele/ })).toBeTruthy();
+    const main = await screen.findByRole('main');
+    expect(await within(main).findByRole('link', { name: /Comenzile mele/ })).toBeTruthy();
   });
 });

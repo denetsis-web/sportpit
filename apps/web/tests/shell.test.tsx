@@ -7,10 +7,17 @@ import type { FeatureRoutesModule } from '../src/app/routes.tsx';
 import { resetSession } from '../src/features/client/auth/session.ts';
 import { installFakeApi, user } from './auth/fakeApi.ts';
 import { DARK, renderApp, setMedia } from './helpers.tsx';
+import { clientModules as landingModules } from './landing/render.tsx';
 
-beforeEach(() => serveGuest());
+// Гость в браузере на / видит лендинг без оболочки (см. ниже и tests/landing). Эти проверки идут в установленном
+// приложении (standalone), где гость видит прежнюю главную внутри оболочки.
+beforeEach(() => {
+  serveGuest();
+  setMedia('(display-mode: standalone)', true);
+});
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
   resetSession();
 });
@@ -161,6 +168,23 @@ describe('баннер «Нет связи»', () => {
       Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
       window.dispatchEvent(new Event('online'));
     });
+  });
+});
+
+describe('оболочка на адресах лендинга', () => {
+  it('гостю в браузере — только содержимое: ни шапки, ни нижнего меню, ни окна выбора языка', async () => {
+    setMedia('(display-mode: standalone)', false);
+    renderApp({ initialEntries: ['/'], clientModules: landingModules }, { lang: null });
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Люби себя делом');
+    expect(document.querySelector('.shell__header')).toBeNull();
+    expect(document.querySelector('.shell__nav')).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('в установленном приложении та же страница живёт в оболочке, с окном выбора языка', async () => {
+    renderApp({ initialEntries: ['/'], clientModules: landingModules }, { lang: null });
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+    expect(document.querySelector('.shell__header')).not.toBeNull();
   });
 });
 
