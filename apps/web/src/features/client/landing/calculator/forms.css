@@ -1,0 +1,167 @@
+/*
+ * Формы лендинга: карточка формы, поля, выбор «чипами», галочка, ошибка, поле-приманка.
+ * Вид — brand/landing/DESIGN.md («Field»): Surface, обводка 1.5px Line, радиус 12px, высота 52px, подпись над полем.
+ * Токены `--lp-*` лежат на корне `.lp` (landing.css).
+ */
+.lp-formcard {
+  display: grid;
+  gap: var(--lp-space-md);
+  padding: var(--lp-space-lg) var(--lp-space-md);
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius-md);
+  background: var(--lp-surface);
+  color: var(--lp-primary);
+  min-width: 0;
+}
+
+/* Карточка лежит на тёмной или бордовой секции, где кольцо фокуса лаймовое: на кремовой карточке нужно бордо. */
+.lp .lp-formcard :focus-visible {
+  outline-color: var(--lp-secondary);
+}
+
+.lp-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lp-field__label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.lp-field__control {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--lp-line);
+  border-radius: var(--lp-radius-sm);
+  background: var(--lp-surface);
+  color: var(--lp-primary);
+  font: inherit;
+  line-height: 1.3;
+}
+
+.lp-field__control[aria-invalid='true'] {
+  border-color: var(--lp-error);
+}
+
+.lp-field__hint {
+  color: var(--lp-muted);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.lp-field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--lp-error);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.lp-field__error svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.lp-choices {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lp-choices legend {
+  padding: 0;
+}
+
+.lp-choices__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lp-space-sm);
+}
+
+.lp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lp-space-sm);
+  min-height: var(--lp-tap);
+  padding: 8px 16px;
+  border: 1.5px solid var(--lp-line);
+  border-radius: var(--lp-radius-pill);
+  cursor: pointer;
+}
+
+.lp-chip input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--lp-secondary);
+}
+
+.lp-chip:has(input:checked) {
+  border-color: var(--lp-secondary);
+  background: rgb(90 18 48 / 0.08);
+}
+
+.lp-chip:has(input:focus-visible) {
+  outline: 3px solid var(--lp-secondary);
+  outline-offset: 2px;
+}
+
+.lp-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: var(--lp-tap);
+  padding-block: 8px;
+  cursor: pointer;
+}
+
+.lp-check input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--lp-secondary);
+}
+
+.lp-check span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Ссылка рядом с галочкой: цель нажатия не меньше 44 px. */
+.lp-field__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--lp-tap);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Сообщение уровня формы (сеть, лимит): иконка и текст. */
+.lp-formcard__error {
+  margin: 0;
+}
+
+/* Поле-приманка для ботов: вне экрана, без фокуса с клавиатуры, скрыто от скринридера. */
+.lp-trap {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.lp-formcard .lp-btn {
+  width: 100%;
+}

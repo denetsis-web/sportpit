@@ -1,0 +1,96 @@
+/*
+ * Калькулятор нормы: форма в кремовой карточке и результат в карточке цвета forest-raised на тёмной секции.
+ * Лайм на экране один (кнопка «Записаться»), цифры результата — кремовые.
+ */
+.lp-calc {
+  display: grid;
+  gap: var(--lp-space-lg);
+  margin-top: var(--lp-space-lg);
+  max-width: 40rem;
+}
+
+.lp-calc__numbers {
+  display: grid;
+  gap: var(--lp-space-md);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 480px) {
+  .lp-calc__numbers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .lp-calc--result {
+    max-width: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.lp-norm {
+  display: grid;
+  gap: var(--lp-space-md);
+  padding: var(--lp-space-lg) var(--lp-space-md);
+  border-radius: var(--lp-radius-md);
+  background: var(--lp-forest-raised);
+  color: var(--lp-neutral);
+  min-width: 0;
+}
+
+.lp-norm__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lp-space-md);
+  margin: 0;
+}
+
+.lp-norm__cell {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: var(--lp-space-xs);
+  min-width: 0;
+}
+
+.lp-norm__cell--kcal {
+  grid-column: 1 / -1;
+}
+
+.lp-norm__value {
+  margin: 0;
+  font-family: var(--lp-font-display);
+  font-size: var(--lp-fs-figure);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-norm__cell--kcal .lp-norm__value {
+  font-size: 2.25rem;
+}
+
+.lp-norm__caption {
+  color: var(--lp-muted-on-dark);
+  font-size: var(--lp-fs-label);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.lp-norm__note {
+  color: var(--lp-muted-on-dark);
+  font-size: 0.9375rem;
+}
+
+.lp-norm .lp-btn {
+  justify-self: start;
+}
+
+@media (max-width: 479px) {
+  .lp-norm .lp-btn {
+    justify-self: stretch;
+  }
+}

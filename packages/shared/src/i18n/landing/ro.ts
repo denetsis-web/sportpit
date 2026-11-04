@@ -108,6 +108,16 @@ const ro: DictionaryOf<typeof ru> = {
   'calc.text': 'Două minute, fără înregistrare. Îți arătăm o orientare pe zi.',
   'calc.button': 'Calculează',
   'calc.disclaimer': 'Orientativ, nu este o recomandare medicală.',
+  'calc.error.required': 'Completează câmpul.',
+  'calc.error.choose': 'Alege o variantă.',
+  'calc.error.range': 'Introdu un număr între {min} și {max}.',
+  'calc.error.integer': 'Introdu un număr întreg.',
+  'calc.result.title': 'Norma ta pe zi',
+  'calc.fiber': 'fibre',
+  'calc.proteinRange': 'Proteine: orientare {min}–{max} g pe zi.',
+  'calc.floorNote': 'Calculul nu coboară sub minimul sigur: {kcal} kcal pe zi.',
+  'calc.privacy': 'Cifrele se calculează chiar în browser și nu se salvează nicăieri.',
+  'calc.toJoin': 'Înscrie-te pe lista de așteptare',
 
   // ---- întrebări ----
   'faq.label': 'Întrebări și răspunsuri',
@@ -146,6 +156,8 @@ const ro: DictionaryOf<typeof ru> = {
   'join.error.generic': 'Ceva nu a mers. Încearcă din nou.',
   'join.success.title': 'Te-am înscris',
   'join.success.text': 'Îți scriem când apare frigiderul în sala ta.',
+  'join.error.invalid': 'Verifică acest câmp.',
+  'join.consent.read': 'Citește politica și condițiile',
 
   // ---- banner analiză ----
   'consent.region': 'Analiză',

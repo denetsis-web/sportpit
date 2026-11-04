@@ -110,4 +110,10 @@ Node ≥ 22.13 (локально 24), ESM, TypeScript strict; Fastify 5, `node:s
 - `apps/server/src/seo.ts`: `registerSeo(app, { config, indexHtmlPath, dictionaries, webDistDir, servePages? })`, экспорт `escapeHtml`; в `app.ts` вызывается до `setNotFoundHandler`. `GET /`, `/ro`, `/legal`, `/ro/legal` — HTML с тегами (только при раздаче клиента; у `/legal` — `noindex, follow`); `GET /robots.txt`, `GET /sitemap.xml` отдаются всегда и динамически (файлы с такими именами в `public/` были бы перекрыты). `og:image` и `twitter:image` только если `og.png` есть в раздаче. Если в оболочке нет `</head>`, она отдаётся как есть.
 - Service worker: `globIgnores` = `assets/Landing*`, `assets/Legal*`, `assets/Calculator*`, `assets/Join*`, `brand/**`; `/robots.txt` и `/sitemap.xml` в `navigateFallbackDenylist`. `check:bundle` получил три проверки (denylist, чанки лендинга не в начальном наборе и не в предкэше, `brand/` не в предкэше); новый чанк лендинга с другим именем заставит её упасть — это сигнал дополнить `globIgnores`.
 
+### T04 — калькулятор и форма листа ожидания
+
+- `calculator/calc.ts`: `validateCalc(values) → {ok, input|errors}`, `computeNorm(input)` (это `calcTargets`), `parseNumber`, `EMPTY_CALC`; `calculator/fields.tsx`: `TextField, SelectField, ChoiceField, CheckField, FieldError`; `join/prefill.ts`: `prefillGoal`, `usePrefill`, `resetPrefill` (цель только в памяти). `calc_used` уходит через `track` один раз за открытие страницы и только при числовом результате.
+- Новые ключи `landing`: `calc.error.*`, `calc.result.title`, `calc.fiber`, `calc.proteinRange`, `calc.floorNote`, `calc.privacy`, `calc.toJoin`, `join.error.invalid`, `join.consent.read`. Ключ `join.consent.link` из T02 остался без употребления.
+- Открыто (идёт в отчёт): румынские строки вне `copy.md` писал не носитель; тон «ты» в новых строках, подписи полей из профиля на «вы» — выровнять решает владелец; вёрстка на 360 px и контраст инструментом не проверялись.
+
 - Оговорки T01: регистрации в воронке считаются по `signup_attribution` (удалённый аккаунт из счёта уходит); запись листа ожидания при удалении аккаунта не стирается, стирает админ.
