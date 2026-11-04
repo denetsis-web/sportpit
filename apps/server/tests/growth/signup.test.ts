@@ -1,11 +1,10 @@
-// Источник регистрации: вход по коду создаёт строку signup_attribution и событие signup только для НОВОГО пользователя.
+// Источник регистрации: вход по коду создаёт строку signup_attribution только для НОВОГО пользователя; события signup нет.
 import { describe, expect, it } from 'vitest';
 import {
   ANON_A,
   attribution,
   codeFromSms,
   countRows,
-  eventsOf,
   makeApp,
   OTHER_PHONE,
   PHONE,
@@ -30,7 +29,7 @@ const rows = (test: TestApp) =>
   test.app.deps.db.query<AttributionRow>('SELECT * FROM signup_attribution ORDER BY user_id');
 
 describe('POST /auth/otp/verify с attribution', () => {
-  it('новый пользователь: строка signup_attribution и событие signup, ответ API прежний', async () => {
+  it('новый пользователь: строка signup_attribution без события signup, ответ API прежний', async () => {
     const test = await makeApp();
     await requestCode(test, PHONE);
     const res = await verifyCode(test, PHONE, codeFromSms(test.sms, PHONE), {
@@ -52,9 +51,7 @@ describe('POST /auth/otp/verify с attribution', () => {
         created_at: '2026-03-10T09:00:00.000Z',
       },
     ]);
-    expect(eventsOf(test, 'signup')).toEqual([
-      { kind: 'signup', source: 'trainer', ref: 'ion', campaign: 'nov', anon_id: ANON_A },
-    ]);
+    expect(countRows(test, 'funnel_events')).toBe(0);
   });
 
   it('без attribution пишется источник direct', async () => {
@@ -63,7 +60,7 @@ describe('POST /auth/otp/verify с attribution', () => {
     expect(rows(test)).toMatchObject([
       { user_id: id, source: 'direct', ref: null, campaign: null, anon_id: null },
     ]);
-    expect(eventsOf(test, 'signup')).toMatchObject([{ source: 'direct', anon_id: null }]);
+    expect(countRows(test, 'funnel_events')).toBe(0);
   });
 
   it('существующий пользователь: ничего не пишется, прежний источник не меняется', async () => {
@@ -72,7 +69,7 @@ describe('POST /auth/otp/verify с attribution', () => {
     test.clock.advance(5 * 60_000); // повторный код на тот же номер — не раньше чем через минуту
     await signUp(test, PHONE, attribution({ source: 'ig', anonId: ANON_A }));
     expect(rows(test)).toMatchObject([{ source: 'tg', anon_id: null }]);
-    expect(eventsOf(test, 'signup')).toHaveLength(1);
+    expect(countRows(test, 'funnel_events')).toBe(0);
     expect(countRows(test, 'users')).toBe(1);
   });
 

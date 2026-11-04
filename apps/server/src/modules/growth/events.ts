@@ -3,7 +3,7 @@ import type { Attribution, AttributionSource } from '@sportpit/shared/schemas/gr
 import type { Clock } from '../clock/index.ts';
 import type { Db } from '../db/index.ts';
 
-export type FunnelEventKind = 'landing_view' | 'calc_used' | 'waitlist_join' | 'signup';
+export type FunnelEventKind = 'landing_view' | 'calc_used' | 'waitlist_join';
 
 /** Источник в том виде, в каком он хранится: без атрибуции — `direct`, пустые метки — `null`. */
 export interface ResolvedAttribution {
@@ -60,9 +60,4 @@ export function saveSignupAttribution(
       clock.now().toISOString(),
     ],
   );
-}
-
-/** Стирает источник регистрации пользователя (удаление аккаунта). */
-export function deleteSignupAttribution(db: Db, userId: number): void {
-  db.run('DELETE FROM signup_attribution WHERE user_id = ?', [userId]);
 }

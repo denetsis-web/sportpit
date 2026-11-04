@@ -182,7 +182,41 @@ export function allWaitlist(db: Db, filters: WaitlistFilters): WaitlistEntryDto[
   return db.query<Row>(`${SELECT} ${sql} ${ORDER}`, params).map(toDto);
 }
 
-/** Удаляет запись; `false`, если такой нет. */
+/** Стирает события воронки с этими анонимными номерами: по номеру из листа они снова привязались бы к человеку. */
+export function deleteEventsByAnonIds(db: Db, anonIds: ReadonlyArray<string | null>): void {
+  for (const anonId of new Set(anonIds)) {
+    if (anonId) db.run('DELETE FROM funnel_events WHERE anon_id = ?', [anonId]);
+  }
+}
+
+/** Удаляет запись и события с её анонимным номером; `false`, если записи нет. */
 export function deleteWaitlistEntry(db: Db, id: number): boolean {
-  return db.run('DELETE FROM waitlist_entries WHERE id = ?', [id]).changes > 0;
+  return db.tx((tx) => {
+    const entry = tx.get<{ anon_id: string | null }>(
+      'SELECT anon_id FROM waitlist_entries WHERE id = ?',
+      [id],
+    );
+    if (!entry) return false;
+    tx.run('DELETE FROM waitlist_entries WHERE id = ?', [id]);
+    deleteEventsByAnonIds(tx, [entry.anon_id]);
+    return true;
+  });
+}
+
+/**
+ * Стирает всё, что связывает с человеком запись листа и аналитику, при удалении его аккаунта:
+ * запись листа по телефону, источник регистрации и события воронки по анонимным номерам обеих записей.
+ * Синхронная, для хука удаления аккаунта (идёт в его транзакции, до обезличивания).
+ */
+export function eraseUserTraces(db: Db, userId: number, phone: string | undefined): void {
+  const anonIds = db
+    .query<{ anon_id: string | null }>(
+      `SELECT anon_id FROM signup_attribution WHERE user_id = ?
+       UNION ALL SELECT anon_id FROM waitlist_entries WHERE phone = ?`,
+      [userId, phone ?? null],
+    )
+    .map((row) => row.anon_id);
+  deleteEventsByAnonIds(db, anonIds);
+  if (phone) db.run('DELETE FROM waitlist_entries WHERE phone = ?', [phone]);
+  db.run('DELETE FROM signup_attribution WHERE user_id = ?', [userId]);
 }

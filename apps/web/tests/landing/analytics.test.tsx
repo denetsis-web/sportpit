@@ -72,6 +72,24 @@ describe('просмотр и источник', () => {
     expect(again.callsTo('POST /track')).toHaveLength(0);
   });
 
+  it('румынскоязычный гость на /: перенос на /ro не считается просмотром, событие одно — за /ro', async () => {
+    const api = serve();
+    open('/?src=tg', 'ro');
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe(
+      'Iubește-te prin fapte',
+    );
+    await waitFor(() => expect(api.callsTo('POST /track')).toHaveLength(1));
+    // даём возможному второму событию время уйти
+    await new Promise((r) => setTimeout(r, 50));
+    expect(api.callsTo('POST /track')).toHaveLength(1);
+    expect(api.callsTo('POST /track')[0]!.body).toEqual({
+      kind: 'landing_view',
+      attribution: { source: 'tg' },
+    });
+    // просмотр записан за адресом /ro, а не за / (его гость не видел)
+    expect(JSON.parse(window.sessionStorage.getItem('sportpit.lv') ?? '[]')).toEqual(['/ro']);
+  });
+
   it('сбой события не ломает страницу', async () => {
     serve({ 'POST /track': () => apiError(500, 'server_error', 'core.error.generic') });
     open('/ro', 'ro');

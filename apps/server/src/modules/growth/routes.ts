@@ -5,9 +5,9 @@
 // Только администратор:
 //   GET    /admin/waitlist?q&gym&goal&lang&source&from&to&page  — список по 50 с отметками пути;
 //   GET    /admin/waitlist/csv?…&labels                         — тот же список файлом для Excel;
-//   DELETE /admin/waitlist/:id                                   — удаление записи (по просьбе человека), пишется в журнал действий;
+//   DELETE /admin/waitlist/:id                                   — удаление записи и событий с её анонимным номером (по просьбе человека), пишется в журнал действий;
 //   GET    /admin/funnel?from&to                                 — воронка по источникам за период.
-// Заодно модуль подключает к удалению аккаунта хук «growth»: источник регистрации пользователя стирается.
+// Заодно модуль подключает к удалению аккаунта хук «growth»: запись листа, источник регистрации и события воронки человека стираются.
 import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import {
@@ -19,7 +19,7 @@ import {
 } from '@sportpit/shared/schemas/growth';
 import type { AppDeps, AppInstance } from '../../app.ts';
 import { audit } from '../admin/index.ts';
-import { currentUser, requireRole } from '../auth/index.ts';
+import { authFor, currentUser, requireRole } from '../auth/index.ts';
 import { profileFor } from '../profile/index.ts';
 import { reportsFor } from '../reports/index.ts';
 import {
@@ -32,9 +32,15 @@ import {
   type RateLimiter,
 } from '../system/index.ts';
 import { waitlistCsv } from './csv.ts';
-import { deleteSignupAttribution, recordEvent, resolveAttribution } from './events.ts';
+import { recordEvent, resolveAttribution } from './events.ts';
 import { funnelReport } from './funnel.ts';
-import { allWaitlist, deleteWaitlistEntry, joinWaitlist, listWaitlist } from './waitlist.ts';
+import {
+  allWaitlist,
+  deleteWaitlistEntry,
+  eraseUserTraces,
+  joinWaitlist,
+  listWaitlist,
+} from './waitlist.ts';
 
 /** Лимиты публичных маршрутов, в памяти процесса. Адрес клиента — `req.ip` (за прокси нужен TRUST_PROXY). */
 const JOIN_PER_IP = { max: 30, windowMs: 3_600_000 };
@@ -64,9 +70,10 @@ export function registerRoutes(app: AppInstance, deps: AppDeps): void {
     }
   };
 
-  // Источник регистрации не должен пережить удаление аккаунта (пользователь только обезличивается, каскад не сработает).
+  // Удаление аккаунта стирает запись листа по телефону, источник регистрации и события воронки с анонимными
+  // номерами человека. Хук идёт до обезличивания, поэтому телефон ещё читается.
   profileFor(deps).registerDeletionHook('growth', (userId, tx) =>
-    deleteSignupAttribution(tx, userId),
+    eraseUserTraces(tx, userId, authFor(deps).getUser(userId)?.phone),
   );
 
   // ---- публичные ----

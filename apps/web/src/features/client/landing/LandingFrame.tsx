@@ -88,15 +88,19 @@ export function LandingFrame({ kind, children }: { kind: LandingKind; children: 
   const pathLang = parseLandingPath(pathname)?.lang ?? lang;
   const [synced, setSynced] = useState(embedded || pathLang === lang);
   const first = useRef(true);
+  // Идёт перенос на /ro: страница, с которой уходим, просмотром не считается — его учтёт /ro.
+  const redirecting = useRef(false);
 
   // Язык по адресу: /ro — румынский; русский адрес у румынского посетителя при первом заходе переносит на /ro.
   useEffect(() => {
+    redirecting.current = false;
     if (embedded) return;
     const isFirst = first.current;
     first.current = false;
     if (pathLang !== lang) {
       if (pathLang === 'ro') setLang('ro');
       else if (isFirst) {
+        redirecting.current = true;
         navigate({ pathname: landingPath(kind, 'ro'), search }, { replace: true });
         return;
       } else setLang('ru');
@@ -108,7 +112,7 @@ export function LandingFrame({ kind, children }: { kind: LandingKind; children: 
   useEffect(() => {
     if (embedded) return;
     captureAttribution(`${pathname}${search}`);
-    trackLandingView(pathname);
+    if (!redirecting.current) trackLandingView(pathname);
   }, [embedded, pathname]);
 
   // Название вкладки и цвет строки состояния телефона; при уходе возвращаем прежние.
