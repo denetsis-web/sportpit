@@ -43,6 +43,13 @@ describe('каркас сервера', () => {
     });
   });
 
+  it('/healthz отвечает так же, как /api/health', async () => {
+    const app = await make({ clock: createManualClock('2026-05-05T08:00:00Z') });
+    const res = await app.inject({ method: 'GET', url: '/healthz' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ status: 'ok', db: 'ok' });
+  });
+
   it('модуль с routes.ts подхватывается сам и работает под /api/v1 с подменёнными зависимостями', async () => {
     const clock = createManualClock('2026-07-14T21:30:00Z');
     const sms = new StubSmsSender({ silent: true });

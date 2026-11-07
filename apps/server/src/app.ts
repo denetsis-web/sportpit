@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import fastifyCookie from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify';
 import pino from 'pino';
 import { ZodError } from 'zod';
 import { t } from '@sportpit/shared/i18n';
@@ -229,7 +229,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<AppInstan
     return reply.code(404).send(errorBody(langOf(req), 'not_found', 'core.error.notFound'));
   });
 
-  app.get('/api/health', async (_req, reply) => {
+  // /healthz — тот же ответ под именем, которое опрашивает скрипт выкладки на сервере.
+  const health = async (_req: unknown, reply: FastifyReply) => {
     reply.header('cache-control', 'no-store');
     try {
       db.get('SELECT 1 AS ok');
@@ -243,7 +244,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<AppInstan
       db: 'ok',
       events24h: system.events.counts24h(),
     };
-  });
+  };
+  app.get('/api/health', health);
+  app.get('/healthz', health);
 
   // Модули: маршруты под /api/v1, задачи в планировщик.
   const modules = discoverModules([MODULES_DIR, ...(options.extraModulesDirs ?? [])]);
